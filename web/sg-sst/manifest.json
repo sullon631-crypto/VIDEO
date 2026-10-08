@@ -1,0 +1,102 @@
+{
+  "slides": [
+    {
+      "sceneId": "portada",
+      "notes": "Presentar el objetivo: demostrar el llenado correcto de tres registros del SG-SST. La exposición usa los casos 1, 6 y 7 de Minera Chinalco Perú S.A. Curso: Seminario de Habilidades Prácticas. Docente: Guisela Manira García Ruiz. Fecha del nuevo PPT: Piura, 9 de octubre de 2026."
+    },
+    {
+      "sceneId": "ruta",
+      "notes": "Explicar la secuencia: primero normas y empresa; luego el examen médico, la capacitación y la auditoría. Cerrar comparando las evidencias. Mantener el cursor sobre una tarjeta para entrar o hacer clic para avanzar de inmediato."
+    },
+    {
+      "sceneId": "normas",
+      "notes": "Explicar el aporte de cada norma. Abrir la Figura 1 para mostrar el artículo 33 y los registros resaltados: exámenes médicos, capacitación y auditorías. La información reproduce las fuentes aportadas; las referencias completas se encuentran al final."
+    },
+    {
+      "sceneId": "empresa",
+      "notes": "Los tres registros pertenecen a la misma empresa. Señalar RUC, domicilio, actividad minera de cobre y 50 trabajadores. Estos datos deben ser coherentes en los tres formatos; no se cambia de empleador entre casos."
+    },
+    {
+      "sceneId": "caso-1",
+      "notes": "Introducir el caso 1. Se contrata a un ingeniero para trabajar en altura. Antes de iniciar, se realiza el examen médico y se detecta una condición incompatible con ese riesgo. La decisión es reasignarlo a una oficina, tal como indica el caso."
+    },
+    {
+      "sceneId": "caso-1-logica",
+      "notes": "Justificar el Formato 2: acredita la evaluación de ingreso y las restricciones aplicables al puesto. Diferenciar el examen, el hallazgo y la decisión del empleador. El objetivo preventivo es evitar la exposición al riesgo de caída."
+    },
+    {
+      "sceneId": "formato-2",
+      "notes": "Recorrer los cinco pasos con las flechas o el cursor. Explicar Ingreso I y fecha, trabajador y cargo, apto con restricciones, prohibición de altura y reasignación. El vencimiento es el consignado en el caso; NA corresponde a observaciones de NO APTO porque no fue declarado no apto. Usar Explorar registro para ampliar la imagen o leer el Excel completo.",
+      "fragments": [
+        60.8,
+        61.6,
+        62.4,
+        63.2,
+        64.0
+      ]
+    },
+    {
+      "sceneId": "caso-6",
+      "notes": "Introducir el caso 6. La empresa realiza capacitación teórica y práctica sobre extintores y un simulacro de incendio. Se debe registrar la actividad y a quienes participaron. La imagen procede del nuevo PPT."
+    },
+    {
+      "sceneId": "caso-6-logica",
+      "notes": "Mostrar que las cuatro horas se distribuyen en 2 de teoría, 1 de práctica y 1 de simulacro. Se marcan capacitación y simulacro en un solo formato. La lista firmada es la evidencia de participación. Se usan 20 asistentes, como en el PPT y la tabla del informe."
+    },
+    {
+      "sceneId": "formato-7",
+      "notes": "Recorrer actividades marcadas, fecha y capacitador, cuatro horas, lista de 20 participantes de 13 áreas y evidencia de participación. Distinguir la actividad de la evidencia. El documento original contiene DNI y firmas; la vista de lectura permite ampliar las celdas del Excel.",
+      "fragments": [
+        90.8,
+        91.6,
+        92.4,
+        93.2,
+        94.0
+      ]
+    },
+    {
+      "sceneId": "caso-7",
+      "notes": "Introducir el caso 7. La auditoría detecta monitoreos sin actualizar y un extintor sin revisión. El formato no se limita a enumerar problemas: debe permitir su corrección y seguimiento."
+    },
+    {
+      "sceneId": "caso-7-hallazgos",
+      "notes": "El caso clasifica la NC1 como mayor porque afecta un control general de riesgos; la NC2 como menor porque corresponde a un equipo puntual. No generalizar esta clasificación a todos los casos. Las dos causas revelan falta de seguimiento programado."
+    },
+    {
+      "sceneId": "formato-8",
+      "notes": "Identificar los dos auditores, fechas y procesos auditados. Se cuentan dos no conformidades. Explicar la documentación adjunta: informe de auditoría y plan de acción con causa, medida, responsable, fecha y estado. La siguiente pantalla desarrolla las acciones.",
+      "fragments": [
+        120.8,
+        121.6,
+        122.4,
+        123.2,
+        124.0
+      ]
+    },
+    {
+      "sceneId": "plan-accion",
+      "notes": "La auditoría necesita un plan verificable. Para la NC1, responsable Luis F. Montes Rivera, fecha 30/10/2026, en ejecución. Para la NC2, Óscar D. Fuentes Paredes, 09/10/2026, pendiente. No afirmar que las acciones ya se completaron: esos son los estados de los registros aportados. Resaltar cronogramas y listas mensuales para evitar recurrencia."
+    },
+    {
+      "sceneId": "resumen",
+      "notes": "Comparar la función de los registros: examen y decisión preventiva, capacitación y asistencia, auditoría y acciones correctivas. Los tres pertenecen al mismo empleador y al registro 001. Las tarjetas permiten volver a los formatos para responder preguntas."
+    },
+    {
+      "sceneId": "conclusiones",
+      "notes": "Presentar las cinco conclusiones. La documentación sirve cuando es completa y se vincula con decisiones de prevención y seguimiento. Conectar cada conclusión con el caso correspondiente, en lugar de leerla sin explicación."
+    },
+    {
+      "sceneId": "recomendaciones",
+      "notes": "Recomendar cuatro líneas de trabajo: exámenes y vencimientos; capacitación anual y simulacros; cronogramas con responsables; seguimiento hasta cerrar medidas. Evitar que las acciones sean solo reacciones inmediatas."
+    },
+    {
+      "sceneId": "equipo",
+      "notes": "Agradecer y abrir preguntas. La nueva presentación contiene cinco integrantes, que se conservan en esta página. Para responder sobre los casos, usar el índice o las tarjetas del resumen para volver al registro específico."
+    },
+    {
+      "sceneId": "referencias",
+      "notes": "Las referencias corresponden a la nueva presentación. Se pueden abrir las fuentes desde los enlaces. También se conserva la relación con la R.M. 050-2013-TR y los formatos 2, 7 y 8. Esta es la última pantalla."
+    }
+  ],
+  "slideSequences": []
+}
