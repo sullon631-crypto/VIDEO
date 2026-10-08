@@ -1,0 +1,594 @@
+1
+00:00:01,100 --> 00:00:02,039
+Buenos días.
+
+2
+00:00:02,139 --> 00:00:06,299
+Presentamos los registros obligatorios del
+Sistema de Gestión de Seguridad y
+
+3
+00:00:06,399 --> 00:00:10,473
+Salud en el Trabajo, aplicados a Minera
+Chinalco Perú Sociedad Anónima.
+
+4
+00:00:10,573 --> 00:00:14,733
+Somos Josselyn Vilas, Anderson Varona,
+Luis Felipe Ancajima y Francisco
+
+5
+00:00:14,833 --> 00:00:15,665
+Adrianzen.
+
+6
+00:00:15,765 --> 00:00:20,139
+Esta exposición corresponde al curso
+Seminario de Habilidades Prácticas uno,
+
+7
+00:00:20,239 --> 00:00:22,841
+con la docente Guisela Manira García Ruiz.
+
+8
+00:00:25,541 --> 00:00:29,232
+Revisaremos el marco legal, los datos de
+la empresa y tres casos:
+
+9
+00:00:29,332 --> 00:00:31,350
+el examen médico de ingreso, la
+
+10
+00:00:31,350 --> 00:00:33,705
+capacitación en extintores y la auditoría
+del
+
+11
+00:00:33,805 --> 00:00:34,521
+sistema.
+
+12
+00:00:34,621 --> 00:00:38,247
+Cerraremos con el plan de acción, un
+cuadro resumen, conclusiones y
+
+13
+00:00:38,347 --> 00:00:39,478
+recomendaciones.
+
+14
+00:00:42,178 --> 00:00:46,189
+La Ley veintinueve mil setecientos ochenta
+y tres establece los deberes del
+
+15
+00:00:46,289 --> 00:00:47,803
+empleador en prevención.
+
+16
+00:00:47,903 --> 00:00:52,298
+Su reglamento, el decreto supremo cero
+cero cinco, dos mil doce, detalla los
+
+17
+00:00:52,398 --> 00:00:55,577
+registros obligatorios en el artículo
+treinta y tres.
+
+18
+00:00:55,677 --> 00:00:59,815
+La Figura uno destaca los registros de
+exámenes médicos, capacitación y
+
+19
+00:00:59,915 --> 00:01:00,833
+auditorías.
+
+20
+00:01:00,933 --> 00:01:05,178
+La resolución ministerial cero cincuenta,
+dos mil trece, aprueba los formatos
+
+21
+00:01:05,278 --> 00:01:06,302
+referenciales.
+
+22
+00:01:06,402 --> 00:01:10,306
+La resolución trescientos doce, dos mil
+once, del Ministerio de Salud,
+
+23
+00:01:10,406 --> 00:01:13,606
+establece los protocolos médicos y
+criterios de aptitud.
+
+24
+00:01:16,306 --> 00:01:19,165
+Los tres casos corresponden a una misma
+empresa:
+
+25
+00:01:19,265 --> 00:01:21,569
+Minera Chinalco Perú Sociedad Anónima.
+
+26
+00:01:21,669 --> 00:01:25,935
+Su RUC es dos, cero, cinco, cero, seis,
+seis, siete, cinco, cuatro, cinco,
+
+27
+00:01:26,035 --> 00:01:26,697
+siete.
+
+28
+00:01:26,797 --> 00:01:31,234
+Su domicilio es avenida Santa Cruz, número
+ciento ochenta, San Isidro, Lima.
+
+29
+00:01:31,334 --> 00:01:35,473
+Se dedica a minería metálica de cobre y
+tiene cincuenta trabajadores en el
+
+30
+00:01:35,573 --> 00:01:36,597
+centro laboral.
+
+31
+00:01:36,697 --> 00:01:39,321
+Estos datos se repiten en los tres
+formatos.
+
+32
+00:01:42,021 --> 00:01:42,888
+Caso uno:
+
+33
+00:01:42,988 --> 00:01:45,356
+examen médico ocupacional de ingreso.
+
+34
+00:01:45,456 --> 00:01:48,272
+Se contrata a un ingeniero para trabajar
+en altura.
+
+35
+00:01:48,372 --> 00:01:52,831
+El examen previo detecta una condición
+médica incompatible con esa tarea y se
+
+36
+00:01:52,931 --> 00:01:54,702
+le reasigna a una oficina.
+
+37
+00:01:54,802 --> 00:01:58,855
+El Formato dos corresponde porque registra
+el examen antes del inicio de
+
+38
+00:01:58,955 --> 00:02:01,707
+labores, su fecha, aptitud y
+restricciones.
+
+39
+00:02:01,807 --> 00:02:03,514
+La evaluación permitió prevenir la
+
+40
+00:02:03,514 --> 00:02:06,244
+exposición al riesgo de caída y reubicar
+al
+
+41
+00:02:06,344 --> 00:02:07,219
+trabajador.
+
+42
+00:02:09,919 --> 00:02:14,143
+El Formato dos registra un examen de
+ingreso del veintidós de septiembre de dos
+
+43
+00:02:14,243 --> 00:02:15,416
+mil veintiséis.
+
+44
+00:02:15,516 --> 00:02:19,612
+El trabajador es Carlos Alberto Ramírez
+Torres, de treinta y dos años,
+
+45
+00:02:19,712 --> 00:02:22,208
+ingeniero de mantenimiento mecánico de
+mina.
+
+46
+00:02:22,308 --> 00:02:23,375
+Su aptitud es:
+
+47
+00:02:23,475 --> 00:02:24,883
+apto con restricciones.
+
+48
+00:02:24,983 --> 00:02:27,180
+No debe realizar trabajos en altura;
+
+49
+00:02:27,280 --> 00:02:28,966
+fue reasignado a oficina.
+
+50
+00:02:29,066 --> 00:02:32,714
+El examen vence el veintidós de septiembre
+de dos mil veintisiete.
+
+51
+00:02:32,814 --> 00:02:37,144
+En observaciones para no aptos se coloca
+no aplica, porque no fue declarado no
+
+52
+00:02:37,244 --> 00:02:37,904
+apto.
+
+53
+00:02:38,004 --> 00:02:40,734
+La Figura tres muestra el registro
+completo.
+
+54
+00:02:43,434 --> 00:02:44,264
+Caso seis:
+
+55
+00:02:44,364 --> 00:02:46,049
+capacitación en extintores.
+
+56
+00:02:46,149 --> 00:02:50,736
+Ante una nueva obligación, la empresa
+realiza capacitación teórica y práctica y
+
+57
+00:02:50,836 --> 00:02:52,351
+un simulacro de incendio.
+
+58
+00:02:52,451 --> 00:02:56,141
+El Formato siete deja evidencia de las
+actividades formativas.
+
+59
+00:02:56,241 --> 00:03:00,700
+Un solo registro reúne capacitación y
+simulacro, con la lista firmada como
+
+60
+00:03:00,800 --> 00:03:01,568
+respaldo.
+
+61
+00:03:01,668 --> 00:03:05,252
+De esta manera, el cumplimiento puede
+verificarse en una inspección.
+
+62
+00:03:07,952 --> 00:03:12,069
+En el Formato siete se marcaron
+capacitación y simulacro de emergencia.
+
+63
+00:03:12,169 --> 00:03:16,372
+El tema fue uso y manejo de extintores
+portátiles y simulacro de incendio.
+
+64
+00:03:16,472 --> 00:03:20,568
+Se realizó el veinticinco de septiembre de
+dos mil veintiséis, con el ingeniero
+
+65
+00:03:20,668 --> 00:03:22,780
+Jorge Luis Paredes Salazar, de SSOMA.
+
+66
+00:03:22,880 --> 00:03:24,053
+Duró cuatro horas:
+
+67
+00:03:24,153 --> 00:03:26,991
+dos de teoría, una de práctica y una de
+simulacro.
+
+68
+00:03:27,091 --> 00:03:31,037
+Participaron veinte trabajadores de trece
+áreas, con DNI y firma.
+
+69
+00:03:31,137 --> 00:03:34,593
+La Figura cinco contiene la lista completa
+de participantes.
+
+70
+00:03:37,293 --> 00:03:38,232
+Caso siete:
+
+71
+00:03:38,332 --> 00:03:40,295
+auditoría del sistema de gestión.
+
+72
+00:03:40,395 --> 00:03:44,533
+El primer hallazgo fue que los registros
+de monitoreo de agentes de riesgo no
+
+73
+00:03:44,633 --> 00:03:46,767
+se actualizaron en el último año.
+
+74
+00:03:46,867 --> 00:03:50,643
+El segundo fue un extintor del almacén sin
+revisión dentro del plazo.
+
+75
+00:03:50,743 --> 00:03:54,284
+El Formato ocho registra los hallazgos y
+su plan de acción.
+
+76
+00:03:54,384 --> 00:03:58,800
+En este caso se clasificó el primero como
+no conformidad mayor, por su alcance
+
+77
+00:03:58,900 --> 00:04:01,567
+general, y el segundo como menor, por ser
+puntual.
+
+78
+00:04:04,267 --> 00:04:08,896
+El Formato ocho identifica a los auditores
+Walter Cornejo Bustamante y Karina
+
+79
+00:04:08,996 --> 00:04:10,020
+Ayala Domínguez.
+
+80
+00:04:10,120 --> 00:04:14,195
+La auditoría se realizó el veintiocho y
+veintinueve de septiembre de dos mil
+
+81
+00:04:14,295 --> 00:04:15,255
+veintiséis.
+
+82
+00:04:15,355 --> 00:04:19,344
+Los procesos revisados fueron el monitoreo
+de agentes de riesgo en mina y
+
+83
+00:04:19,444 --> 00:04:22,516
+planta, y la inspección de extintores del
+almacén general.
+
+84
+00:04:22,616 --> 00:04:24,920
+Se registraron dos no conformidades:
+
+85
+00:04:25,020 --> 00:04:26,385
+una mayor y una menor.
+
+86
+00:04:26,485 --> 00:04:29,835
+La Figura seis muestra el registro y las
+medidas de cierre.
+
+87
+00:04:32,535 --> 00:04:36,353
+El plan de acción convierte cada hallazgo
+en una corrección verificable.
+
+88
+00:04:36,453 --> 00:04:40,400
+Para la no conformidad mayor, falta un
+cronograma anual de monitoreo y un
+
+89
+00:04:40,500 --> 00:04:42,143
+responsable de seguimiento.
+
+90
+00:04:42,243 --> 00:04:46,872
+Se propone contratar un laboratorio
+acreditado, actualizar registros, informar
+
+91
+00:04:46,972 --> 00:04:50,065
+al Comité de Seguridad y Salud y aprobar
+el cronograma.
+
+92
+00:04:50,165 --> 00:04:51,147
+Responsable:
+
+93
+00:04:51,247 --> 00:04:52,996
+Luis Fernando Montes Rivera.
+
+94
+00:04:53,096 --> 00:04:53,764
+Plazo:
+
+95
+00:04:53,864 --> 00:04:56,274
+treinta de octubre de dos mil veintiséis;
+
+96
+00:04:56,374 --> 00:04:57,057
+estado:
+
+97
+00:04:57,157 --> 00:04:58,091
+en ejecución.
+
+98
+00:04:58,191 --> 00:05:00,794
+Para la menor, falta control de las
+inspecciones.
+
+99
+00:05:00,894 --> 00:05:05,566
+Se debe revisar y mantener el extintor,
+actualizar su tarjeta e implementar una
+
+100
+00:05:05,666 --> 00:05:06,669
+lista mensual.
+
+101
+00:05:06,769 --> 00:05:07,750
+Responsable:
+
+102
+00:05:07,850 --> 00:05:09,557
+Óscar Daniel Fuentes Paredes.
+
+103
+00:05:09,657 --> 00:05:10,324
+Plazo:
+
+104
+00:05:10,424 --> 00:05:12,686
+nueve de octubre de dos mil veintiséis;
+
+105
+00:05:12,786 --> 00:05:13,468
+estado:
+
+106
+00:05:13,568 --> 00:05:14,364
+pendiente.
+
+107
+00:05:14,464 --> 00:05:17,750
+Ambas medidas corrigen la falta de
+seguimiento programado.
+
+108
+00:05:20,450 --> 00:05:23,628
+El cuadro resumen conecta cada caso con su
+evidencia.
+
+109
+00:05:23,728 --> 00:05:27,824
+En el caso uno, el Formato dos acredita la
+aptitud con restricción y la
+
+110
+00:05:27,924 --> 00:05:28,906
+reasignación.
+
+111
+00:05:29,006 --> 00:05:33,230
+En el caso seis, el Formato siete conserva
+la lista de veinte participantes y
+
+112
+00:05:33,330 --> 00:05:34,844
+las horas de capacitación.
+
+113
+00:05:34,944 --> 00:05:39,296
+En el caso siete, el Formato ocho registra
+dos no conformidades y su plan de
+
+114
+00:05:39,396 --> 00:05:40,058
+acción.
+
+115
+00:05:40,158 --> 00:05:42,418
+Todos pertenecen a la misma empresa.
+
+116
+00:05:45,118 --> 00:05:46,804
+Las conclusiones son cinco.
+
+117
+00:05:46,904 --> 00:05:49,592
+Cada situación necesita el formato
+correcto.
+
+118
+00:05:49,692 --> 00:05:53,937
+Los registros deben estar completos, con
+fecha, responsable y firma cuando
+
+119
+00:05:54,037 --> 00:05:54,912
+corresponda.
+
+120
+00:05:55,012 --> 00:05:59,172
+El examen de ingreso evitó una exposición
+incompatible con la condición del
+
+121
+00:05:59,272 --> 00:06:00,146
+trabajador.
+
+122
+00:06:00,246 --> 00:06:04,492
+La capacitación y el simulacro documentan
+el cumplimiento de la obligación.
+
+123
+00:06:04,592 --> 00:06:09,050
+Finalmente, una auditoría cumple su
+propósito cuando cada no conformidad tiene
+
+124
+00:06:09,150 --> 00:06:11,497
+causa, medida, responsable y plazo.
+
+125
+00:06:14,197 --> 00:06:18,592
+Recomendamos programar los exámenes
+periódicos y controlar sus vencimientos.
+
+126
+00:06:18,692 --> 00:06:22,489
+Incluir extintores y simulacros en el plan
+anual de capacitación.
+
+127
+00:06:22,589 --> 00:06:26,706
+Aprobar cronogramas de monitoreo e
+inspección con responsables definidos.
+
+128
+00:06:26,806 --> 00:06:30,753
+Y seguir el plan de acción hasta que todas
+las medidas estén realizadas.
+
+129
+00:06:30,853 --> 00:06:34,842
+Así, los registros sirven para prevenir
+riesgos y comprobar mejoras.
+
+130
+00:06:37,542 --> 00:06:39,462
+Muchas gracias por su atención.
+
+131
+00:06:39,562 --> 00:06:41,568
+Quedamos atentos a sus preguntas.
