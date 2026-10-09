@@ -9,7 +9,7 @@
     "Private editable notes saved locally, timer and separate synchronized audience window",
     "Reduced-motion option preserves readable content",
     "All sections fit 390px mobile and 768px tablet; document and cell zoom controls remain usable",
-    "Core content, scripts, fonts and PPT fallback photos load locally; optional source photos use only the supplied hosts; no JavaScript errors"
+    "All content, scripts, fonts, PPT photos and three new source photographs load locally without external requests or JavaScript errors"
   ],
   "screens": [
     {
@@ -128,15 +128,5 @@
     }
   ],
   "errors": [],
-  "external": [],
-  "sourceRequests": [
-    "https://www.horizonteminero.com/wp-json/wp/v2/posts?slug=minera-chinalco-peru-s-a-realiza-mantenimiento-de-puentes-de-la-carretera-central&_embed=wp:featuredmedia",
-    "https://www.chinalco.com.pe/sites/default/files/styles/banner_home/public/slider/2023.06.09%20Mantenimiento%20Mina%2009062023-IMG_1834.JPG?itok=vdmvg_GJ",
-    "https://www.miradiols.cl/wp-content/uploads/2018/09/WhatsApp-Image-2018-08-21-at-13.15.35-4-1.jpeg"
-  ],
-  "sourceFailures": [
-    "https://www.chinalco.com.pe/sites/default/files/styles/banner_home/public/slider/2023.06.09%20Mantenimiento%20Mina%20090: net::ERR_TUNNEL_CONNECTION_FAILED",
-    "https://www.miradiols.cl/wp-content/uploads/2018/09/WhatsApp-Image-2018-08-21-at-13.15.35-4-1.jpeg: net::ERR_TUNNEL_CONNECTION_FAILED",
-    "https://www.horizonteminero.com/wp-json/wp/v2/posts?slug=minera-chinalco-peru-s-a-realiza-mantenimiento-de-puentes-de-la: net::ERR_TUNNEL_CONNECTION_FAILED"
-  ]
+  "external": []
 }

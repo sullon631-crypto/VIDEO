@@ -4,7 +4,7 @@
   const data = JSON.parse($('site-data').textContent);
   const sourceStatus={};
   for(const [name,source] of Object.entries(data.sourceImages||{})){
-    data.images[name]=data.images[source.fallback];sourceStatus[name]='fallback';
+    data.images[name]=data.images[source.viewer_image];sourceStatus[name]='embedded';
   }
   const sections = [...document.querySelectorAll('.web-section')];
   const audience = new URLSearchParams(location.search).get('mode') === 'audience';
@@ -314,39 +314,6 @@
   });
   let resizeTimer;
   addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{createAnimations();ScrollTrigger.refresh();updateScroll();},250);});
-  // Source photos load progressively; embedded PPT photos remain available offline or on a source failure.
-  function preloadSource(name,url,source){
-    return new Promise(resolve=>{
-      const image=new Image();let finished=false;
-      const finish=ok=>{if(finished)return;finished=true;clearTimeout(timer);resolve(ok);};
-      const timer=setTimeout(()=>finish(false),12000);
-      image.onload=()=>{
-        if(finished||!image.naturalWidth)return;
-        data.images[name]=url;sourceStatus[name]='source';
-        document.querySelectorAll(`[data-source-image="${name}"]`).forEach(node=>{
-          node.src=url;node.alt=source.title;
-          const button=node.closest('[data-image]');if(button){button.dataset.title=source.title;button.setAttribute('aria-label','Ampliar: '+source.title);}
-        });
-        if(name==='chinalco-plant')document.querySelector('.hero-image-credit').textContent='PLANTA · HORIZONTE MINERO';
-        finish(true);
-      };
-      image.onerror=()=>finish(false);image.src=url;
-    });
-  }
-  async function loadSource(name,source){
-    let url=source.url;
-    if(source.endpoint){
-      const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),10000);
-      try{
-        const response=await fetch(source.endpoint,{signal:controller.signal,credentials:'omit'});
-        if(!response.ok)return;
-        const posts=await response.json();
-        const media=posts[0]?._embedded?.['wp:featuredmedia']?.[0];url=media?.source_url;
-      }catch(_){return;}finally{clearTimeout(timer);}
-    }
-    if(!url||!url.startsWith('https://'))return;
-    await preloadSource(name,url,source);
-  }
-  for(const [name,source] of Object.entries(data.sourceImages||{}))loadSource(name,source);
+  // Context photographs are bundled locally, including in the portable offline HTML.
   window.__sgSite={get active(){return active;},get zoom(){return zoom;},get settings(){return {...settings};},get sourceStatus(){return {...sourceStatus};}};
 })();

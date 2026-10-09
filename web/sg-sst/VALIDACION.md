@@ -11,7 +11,7 @@ Las pruebas de `scripts/qa_scroll.mjs` finalizaron con código 0 en Chromium. El
 - Sonido optativo, puntero de exposición y movimiento reducido.
 - Notas privadas editables guardadas en el navegador, cronómetro y ventana del público sincronizada por posición.
 - Todos los apartados caben sin desbordamiento horizontal en 390 px y 768 px. Los controles del visor y la lectura de celdas se probaron en ambos tamaños.
-- Ningún error de JavaScript. El contenido, las fuentes, los scripts y las fotos del PPT cargan localmente; las nuevas fotos de contexto solo solicitan los tres dominios indicados por el usuario. Los fallos de esas fuentes opcionales quedan registrados por separado y conservan las imágenes del PPT.
+- Ningún error de JavaScript ni solicitud externa para cargar el contenido, las fuentes, los scripts y las imágenes. Las tres fotografías nuevas también están incrustadas.
 
 El control de pantalla completa solicita la API nativa con activación real del usuario. Chromium administrado deja la solicitud pendiente incluso en una página mínima: la entrada real a pantalla completa no pudo verificarse en este entorno. No se simula pantalla completa.
 
@@ -29,8 +29,8 @@ La comprobación del navegador sobre el enlace público también finalizó con c
 
 ## Sustitución de imágenes ajenas al caso
 
-Se retiraron las fotografías de Lando de la portada, el abanico y los datos de imágenes de la web. La nueva selección usa las tres fuentes indicadas en `assets/case-image-sources.json`, con carga progresiva y fotos del PPT como respaldo.
+Se retiraron las fotografías de Lando de la portada, el abanico y los datos de imágenes de la web. La nueva selección usa las tres fuentes indicadas en `assets/case-image-sources.json`: planta de Horizonte Minero, mantenimiento de Chinalco y capacitación referencial de Mi Radio.
 
-`qa_images.mjs` finalizó con código 0. Se verificaron los 19 apartados, ausencia de imágenes o enlaces de Lando, carga de los respaldos tras fallar las fuentes, actualización de la portada/tarjetas/visor en el escenario exitoso con respuestas interceptadas, zoom y ausencia de desbordamiento en escritorio y móvil. No hubo errores de JavaScript. Las imágenes utilizadas en las respuestas interceptadas son fixtures del PPT; no se confunden con fotos descargadas de las fuentes nuevas.
+Las tres fotografías originales se recuperaron de respuestas HTTP reales de Chromium, tras cargar la web publicada. Se inspeccionaron visualmente; la foto de la planta coincide con la captura del usuario. Sus URL, dimensiones y hashes se registran en `assets/case-image-downloads.json`. El acceso directo con curl había devuelto CONNECT 403, pero la descarga normal del navegador sí funcionó. No se utilizaron fixtures para obtener estas fotografías.
 
-El acceso real a las tres fuentes devuelve CONNECT 403 en el proxy del entorno. Las nuevas imágenes están enlazadas para cargarse en el navegador con internet; no se verificó aquí la descarga de sus originales. El ZIP conserva las fotos del PPT cuando esas fuentes no están disponibles. Informe: `qa-scroll/image-report.json`.
+Las tarjetas usan previews WebP; el visor abre los originales JPEG sin cambios, con resolución de 8192×4608, 1400×950 y 1280×960. Los JPEG se incrustan una sola vez en los datos del HTML portátil y se conservan en el ZIP. `qa_images.mjs` compara sus hashes con los originales descargados y verifica el zoom, los 19 apartados y el modo sin conexión. Chromium administrado bloquea la navegación a URL file; el ensayo sin conexión carga el HTML portátil exacto desde memoria con la red desactivada. Informe: `qa-scroll/image-report.json`.

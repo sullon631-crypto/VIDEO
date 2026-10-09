@@ -24,13 +24,13 @@ def picture(name,alt,cls='',caption=''):
 SOURCES=json.loads((ASSETS/'case-image-sources.json').read_text())
 def context_picture(name,cls='',caption=''):
     source=SOURCES[name]
-    markup=picture(source['fallback'],source['fallback_title'],cls,caption)
-    markup=markup.replace(f'data-image="{source["fallback"]}"',f'data-image="{name}"')
+    markup=picture(source['image'],source['title'],cls,caption)
+    markup=markup.replace(f'data-image="{source["image"]}"',f'data-image="{name}"')
     return markup.replace('<img src=',f'<img data-source-image="{name}" src=')
 
 hero=f'''<div class="hero-contours" aria-hidden="true"></div><div class="hero-disc" aria-hidden="true"><span>ACTUAR ANTES / CUIDAR SIEMPRE</span></div>
 <div class="hero-copy"><p class="eyebrow" data-anim>GRUPO 1 · SEGURIDAD INDUSTRIAL</p><h1><span class="hero-line">LA PREVENCIÓN</span><span class="hero-line">EMPIEZA</span><span class="hero-line hero-emphasis">ANTES.</span></h1><p class="hero-sub" data-anim>La evidencia también protege.<br>Tres casos del SG-SST, una forma de actuar.</p><a class="button primary" href="#ruta" data-anim>Explorar la presentación <span>↓</span></a><div class="hero-meta" data-anim><span>MINERA CHINALCO PERÚ S.A.</span><span>PIURA / 09.10.2026</span></div></div>
-<div class="hero-visual"><div class="hero-orbit" aria-hidden="true"></div><button class="hero-portrait" data-image="chinalco-plant" data-title="Personal de la operación minera · imagen del PPT" aria-label="Ampliar imagen de la operación minera"><img class="hero-person" data-source-image="chinalco-plant" src="assets/company.webp" alt="Personal de la operación minera, fotografía incluida en el PPT"></button><span class="hero-image-credit">OPERACIÓN MINERA · CHINALCO</span><div class="hero-ticket"><span>REGISTRAR ES</span><strong>prevenir.</strong><small>R.M. N.° 050-2013-TR</small></div></div><a class="scroll-hint" href="#ruta"><span>DESLIZA PARA DESCUBRIR</span><i>↓</i></a>'''
+<div class="hero-visual"><div class="hero-orbit" aria-hidden="true"></div><button class="hero-portrait" data-image="chinalco-plant" data-title="Planta de Chinalco · fotografía de Horizonte Minero" aria-label="Ampliar imagen de la planta de Chinalco"><img class="hero-person" data-source-image="chinalco-plant" src="assets/chinalco-plant.webp" alt="Planta de Chinalco · fotografía de Horizonte Minero"></button><span class="hero-image-credit">PLANTA · HORIZONTE MINERO</span><div class="hero-ticket"><span>REGISTRAR ES</span><strong>prevenir.</strong><small>R.M. N.° 050-2013-TR</small></div></div><a class="scroll-hint" href="#ruta"><span>DESLIZA PARA DESCUBRIR</span><i>↓</i></a>'''
 
 def format_section(number):
     f=FORMATS[number]
@@ -61,7 +61,9 @@ chapters=[('ruta','Recorrido'),('normas','Normas'),('empresa','Empresa'),('caso-
 nav=''.join(f'<a href="#{id}">{label}</a>' for id,label in chapters)
 index=''.join(f'<a href="#{s["id"]}" data-index-link><span>{i+1:02d}</span><strong>{s["title"]}</strong>{ARROW}</a>' for i,s in enumerate(SLIDES))
 dots=''.join(f'<a href="#{s["id"]}" aria-label="Ir a {html.escape(s["title"])}" data-section-dot="{i}"><span>{html.escape(s["title"])}</span></a>' for i,s in enumerate(SLIDES))
-data={'sections':[{k:v for k,v in s.items() if k not in ['body','theme']} for s in SLIDES],'formats':{n:{**f,'link':LINKS[n]} for n,f in FORMATS.items()},'workbooks':json.loads((ROOT/'workbooks.json').read_text()),'images':{p.stem:'assets/'+p.name for p in ASSETS.glob('*.webp') if not p.stem.startswith('lando-')},'sourceImages':SOURCES}
+image_paths=list(ASSETS.glob('*.webp'))+[ASSETS/(source['viewer_image']+'.jpg') for source in SOURCES.values()]
+previews={source['image'] for source in SOURCES.values()}
+data={'sections':[{k:v for k,v in s.items() if k not in ['body','theme']} for s in SLIDES],'formats':{n:{**f,'link':LINKS[n]} for n,f in FORMATS.items()},'workbooks':json.loads((ROOT/'workbooks.json').read_text()),'images':{p.stem:'assets/'+p.name for p in image_paths if not p.stem.startswith('lando-') and p.stem not in previews},'sourceImages':SOURCES}
 css=(ROOT/'site.css').read_text()
 javascript=(ROOT/'site.js').read_text()
 template=f'''<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#eeece3"><meta name="description" content="Una exposición interactiva de los casos 1, 6 y 7 del SG-SST: exámenes médicos, capacitación y auditorías."><title>Registrar es prevenir · Una exposición en movimiento</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%232d3727'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-size='32' font-family='Arial' font-weight='900' fill='%23e2edaf'%3ESG%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="site.css"></head><body>
@@ -84,7 +86,7 @@ for name in ['gsap.min.js','ScrollTrigger.min.js']:
     portable=portable.replace(f'<script src="assets/{name}"></script>','<script>'+js(ASSETS/name)+'</script>')
 portable=portable.replace('<script src="site.js"></script>','<script>'+javascript+'</script>')
 # Only embed referenced images; the rest of the old project is preserved on disk.
-for p in ASSETS.glob('*.webp'):
+for p in image_paths:
     portable=portable.replace('assets/'+p.name,uri(p))
 portable=portable.replace('assets/click-soft.mp3',uri(ASSETS/'click-soft.mp3'))
 licenses={name:(ASSETS/(name+'-OFL.txt')).read_text() for name in ['Anton','Manrope','Fraunces']}
@@ -92,7 +94,7 @@ portable=portable.replace('</body>',f'<script type="application/json" id="font-l
 (ROOT/'index.html').write_text(portable)
 with ZipFile(ROOT/'Presentacion-SG-SST.zip','w',ZIP_DEFLATED,compresslevel=9) as z:
     z.writestr('index.html',portable)
-    z.writestr('LEEME.txt','PRESENTACIÓN SG-SST · WEB VERTICAL\n\nExtrae el ZIP y abre index.html con Chrome, Edge o Firefox. Recorre la presentación con la rueda del ratón. Pulsa las imágenes para ampliar. F: pantalla completa; I: índice; P: expositor; L: puntero.\n\nLas fuentes, documentos e imágenes del PPT están incluidos. Las fotografías adicionales de Chinalco, Horizonte Minero y Mi Radio se cargan con internet; sin conexión se conservan las fotos mineras y de extintores del PPT. Google Sheets y los enlaces a las normas requieren internet.\n')
+    z.writestr('LEEME.txt','PRESENTACIÓN SG-SST · WEB VERTICAL\n\nExtrae el ZIP y abre index.html con Chrome, Edge o Firefox. Recorre la presentación con la rueda del ratón. Pulsa las imágenes para ampliar. F: pantalla completa; I: índice; P: expositor; L: puntero.\n\nLas fuentes, documentos, imágenes del PPT y las tres fotografías de Chinalco, Horizonte Minero y Mi Radio están incluidos. La presentación y su zoom funcionan sin internet. Google Sheets y los enlaces a las normas y los créditos requieren internet. La fotografía de capacitación de Mi Radio es referencial.\n')
 docs=ROOT.parents[1]/'docs'
 docs.mkdir(exist_ok=True)
 (docs/'index.html').write_text(portable)

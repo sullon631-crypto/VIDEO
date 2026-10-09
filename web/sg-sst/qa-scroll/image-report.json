@@ -1,10 +1,11 @@
 {
   "checks": [
-    "All unrelated photos removed; embedded mining/training fallback is readable and zoomable when source requests fail.",
-    "Three supplied source routes load and update hero/cards/viewer in the intercepted success scenario.",
-    "19 sections retained; three replacement-image viewers support zoom; desktop/mobile layout has no horizontal overflow; no JavaScript errors."
+    "All three original source JPEGs are embedded byte for byte; hashes match the actual browser downloads.",
+    "19 sections retain smooth navigation, no unrelated photos, readable mining/training previews and three original-resolution zoom viewers.",
+    "Exact portable HTML renders in browser offline mode: three original-resolution viewers, zoom, fonts and layout. Managed Chromium blocks file URL navigation; the HTML was loaded from memory without network."
   ],
-  "source_downloads_verified": false,
-  "source_download_limitation": "Source domains return proxy CONNECT 403. Success loading is verified with intercepted image fixtures, not the actual remote photos.",
+  "source_downloads_verified": true,
+  "originals_embedded": true,
+  "external_image_requests": [],
   "errors": []
 }
