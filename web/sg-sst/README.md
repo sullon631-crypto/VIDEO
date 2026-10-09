@@ -1,35 +1,52 @@
-# Registrar es prevenir · Presentación web del Grupo 1
+# Registrar es prevenir · Web vertical del Grupo 1
 
-Presentación interactiva de 19 pantallas basada en el nuevo PPT «Presentación Casos SG-SST grupo 1» y en el informe entregado. Usa Anton, Manrope, una paleta naranja/azul oscuro/crema/rojo/amarillo y las fotografías y registros originales del PPT.
+Exposición interactiva de 19 apartados basada en el nuevo PPT «Presentación Casos SG-SST grupo 1» y el informe. El recorrido usa el scroll vertical nativo, apariciones graduales con GSAP ScrollTrigger, titulares Anton, texto Manrope y acentos editoriales Fraunces. La paleta combina crema, azul, verde, lavanda y coral; el naranja ya no domina.
 
 ## Abrir y exponer
 
-`index.html` contiene las fuentes, imágenes, reproductor, animaciones y sonido. Se puede descargar y abrir directamente en un navegador actual, o alojar en cualquier servidor estático. Los enlaces externos a Google Sheets y a las normas necesitan internet.
+`index.html` es una página portátil con fotografías, documentos, fuentes, scripts y sonido incluidos. Puede abrirse directamente en Chrome, Edge o Firefox, o alojarse en cualquier servidor estático. `Presentacion-SG-SST.zip` contiene este archivo y las instrucciones. Google Sheets y las normas enlazadas necesitan internet.
 
-- Flechas del teclado o controles inferiores: avanzar y retroceder. En los formatos, avanzar recorre los cinco pasos antes de pasar a la siguiente pantalla.
-- Mantener el cursor 0,7 segundos sobre un apartado, tarjeta del índice o paso: entrar. La opción CURSOR permite pausar esta navegación.
-- F: pantalla completa. P o el botón de expositor: ventana para el público, notas privadas editables en la ventana actual. Las dos ventanas comparten pantalla y paso mediante BroadcastChannel; necesitan el mismo origen y un navegador que permita ventanas nuevas.
-- I: índice. L: puntero de exposición. Herramientas: reducir movimiento y reiniciar.
-- Imágenes: pulsar para ampliar. Explorar registro: imagen completa o lectura de las celdas. Rueda o +/−: zoom hasta 800 %. Arrastrar: mover. Doble clic: ampliar. Ajustar: encuadrar. Esc: cerrar.
-- El sonido empieza silenciado; el control inferior lo activa. No hay avance automático ni límite de tiempo: el expositor controla el ritmo.
-- En móvil se conserva una composición estrecha; las pantallas con más contenido permiten desplazamiento vertical.
+- Rueda del ratón, trackpad o gesto vertical: recorrer el contenido. Los documentos se mantienen a la vista en escritorio mientras aparecen sus cinco pasos de lectura.
+- Flechas ↑/↓ inferiores o del teclado: ir al apartado anterior o siguiente. La navegación es vertical.
+- Mantener el cursor 0,7 segundos sobre enlaces del menú, el índice, las tarjetas o los pasos: entrar. Se puede desactivar en las opciones.
+- Pulsar las fotografías o los registros: abrir el visor. Rueda o +/−: zoom hasta 1000 %. Arrastrar: mover. Doble clic: ampliar. Pellizco en pantalla táctil: zoom. Ajustar: encuadrar. Esc: cerrar.
+- Los tres registros permiten alternar imagen original y lectura de todas sus celdas, conservando combinaciones y enlaces exactos a Google Sheets.
+- F: pantalla completa. I: índice. L: puntero para señalar. P: notas privadas del expositor y cronómetro.
+- Desde el panel del expositor se abre una ventana del público, sincronizada por posición de scroll y visor. Requiere el mismo origen y permisos del navegador para ventanas emergentes. Las notas no se envían a esa ventana.
+- Las notas editadas se guardan en el navegador. El sonido comienza silenciado y se activa con ♪. Las opciones incluyen movimiento reducido; se respeta la preferencia del sistema.
 
-## Fuentes y contenido
+## Contenido y fotografías
 
-El nuevo PPT prevalece cuando cambia la portada, los cinco integrantes y las referencias. El Formato 7 tiene **20 participantes**, conforme a la tabla del informe y al nuevo PPT; el párrafo anterior que dice 18 no se usa. Las fechas y estados corresponden al caso académico, sin afirmar que las acciones pendientes ya se ejecutaron.
+El nuevo PPT determina la portada, los cinco integrantes, las referencias y la fecha académica del 9 de octubre de 2026. El Formato 7 utiliza **20 participantes**, conforme al PPT y la tabla del informe. Las fechas y los estados pertenecen al caso académico; las acciones pendientes no se presentan como realizadas.
 
-Los Formatos 2, 7 y 8 conservan los enlaces exactos de Google Sheets entregados por el usuario. La vista de lectura usa las celdas y combinaciones de los tres Excel del repositorio: 73, 117 y 60 celdas no vacías. Incluye los 250 valores; no consulta datos nuevos ni modifica Google Sheets. La imagen original permanece disponible para verificar firmas y formato.
+Los registros 2, 7 y 8 conservan 73, 117 y 60 celdas no vacías, respectivamente: **250 valores originales**, además de sus combinaciones. La página no modifica los Google Sheets. Las imágenes del PPT se conservan y se pueden ampliar completas.
 
-## Editar y reconstruir
+Las fotografías de Lando Norris se usan como elementos editoriales por petición del usuario; no representan trabajadores de Chinalco. El crédito aparece en la portada y el pie. `assets/image-sources.json` documenta las páginas oficiales, las URL originales y las copias públicas de los mismos archivos utilizadas para descargarlos. No se reutilizó código de la web de referencia. Los cuatro enlaces suplementarios de minería/extintores están registrados en `assets/supplementary-sources.json`. Sus sitios devuelven CONNECT 403 por el filtro de red del entorno. Se añadieron los dominios a la configuración en borrador; la descarga e incorporación queda pendiente de que el usuario guarde y publique esa configuración. Estas imágenes aún no forman parte de la web publicada.
 
-- `scripts/content.py`: texto, cinco pasos por formato y notas de cada pantalla.
-- `composition.css` / `composition.js`: diseño, animaciones y exploración de los documentos.
-- `wrapper.css` / `wrapper.js`: navegación, herramientas y presentación.
-- `assets/`: recursos originales optimizados y componentes Hyperframes 0.8.142.
-- `python3 scripts/build.py`: recompone el HTML portátil y `composition/index.html`.
+Anton, Manrope y Fraunces se incluyen con sus licencias SIL Open Font License. Las dependencias GSAP se incluyen localmente.
 
-La composición para CLI mantiene las escenas como elementos hermanos. El fondo incluye el reloj de 190 segundos; no envuelve las escenas. Esta duración describe posiciones de navegación, no la duración de la exposición. El HTML portátil usa el harness de presentación independiente con `window.__timelines.root`; la composición editable utiliza el runtime de Hyperframes. No exportar esta presentación interactiva como un MP4.
+## Editar, construir y comprobar
 
-Para probar: desde `/workspace/VIDEO`, iniciar `python3 -m http.server 8080 --bind 127.0.0.1`; desde esta carpeta ejecutar `node scripts/qa.mjs`. Usa Puppeteer y Chromium ya instalados en el entorno. El script comprueba todas las pantallas, los 15 pasos, las celdas de Excel, zoom, navegación, pantalla completa, notas y la vista móvil. Para validar Hyperframes: `npx --yes hyperframes@0.8.142 check composition --samples 19 --json`, con las variables de navegador y caché indicadas en la configuración del entorno.
+Desde `/workspace/VIDEO`:
 
-Las licencias SIL Open Font License de Anton y Manrope se conservan en `assets/`. Las animaciones siguen la preferencia de movimiento reducido del sistema.
+```bash
+python3 web/sg-sst/scripts/build_site.py
+python3 -m http.server 8082 --bind 127.0.0.1 --directory /workspace/VIDEO/web/sg-sst
+```
+
+En otra terminal:
+
+```bash
+SG_SITE_URL=http://127.0.0.1:8082/ node web/sg-sst/scripts/qa_scroll.mjs
+```
+
+- `scripts/content.py`: contenido académico y notas.
+- `scripts/build_site.py`: estructura vertical, generación del HTML portátil, ZIP y `docs/index.html` para GitHub Pages.
+- `site.css` y `site.js`: diseño e interacciones.
+- `site.html`: versión editable que carga los archivos locales.
+- `workbooks.json`: celdas y combinaciones de los Excel.
+- `qa-scroll/report.json`: resultado de las comprobaciones en Chromium.
+
+La web actual es un sitio convencional con scroll; los archivos `composition/`, `composition.*`, `wrapper.*` y `scripts/build.py` conservan la versión anterior del pase de diapositivas. Ese constructor no genera la nueva web vertical. Los videos anteriores permanecen conservados.
+
+GitHub Pages publica la carpeta `/docs` de la rama `presentacion-web`. No se necesitan compilación remota ni llamadas externas para cargar la presentación.

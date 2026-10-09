@@ -1,0 +1,132 @@
+{
+  "url": "http://127.0.0.1:8082/",
+  "checks": [
+    "Native vertical mouse-wheel scrolling; three local fonts; all images loaded; no slideshow iframe",
+    "All 19 sections reachable vertically without horizontal overflow",
+    "15 guided steps update on scroll; three document viewers support zoom, wheel, dragging and escape; Excel reader contains all 250 populated source cells",
+    "Cursor dwell navigation and pause setting; vertical previous/next arrows; keyboard; full index",
+    "Fullscreen requested with real user activation; actual entry unavailable in managed headless Chromium",
+    "Private editable notes saved locally, timer and separate synchronized audience window",
+    "Reduced-motion option preserves readable content",
+    "All sections fit 390px mobile and 768px tablet; document and cell zoom controls remain usable",
+    "Portable page makes no external requests to load content, scripts, fonts or images; no browser errors"
+  ],
+  "screens": [
+    {
+      "id": "portada",
+      "active": 0,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "ruta",
+      "active": 1,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "normas",
+      "active": 2,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "empresa",
+      "active": 3,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "caso-1",
+      "active": 4,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "caso-1-logica",
+      "active": 5,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "formato-2",
+      "active": 6,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "caso-6",
+      "active": 7,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "caso-6-logica",
+      "active": 8,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "formato-7",
+      "active": 9,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "caso-7",
+      "active": 10,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "caso-7-hallazgos",
+      "active": 11,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "formato-8",
+      "active": 12,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "plan-accion",
+      "active": 13,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "resumen",
+      "active": 14,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "conclusiones",
+      "active": 15,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "recomendaciones",
+      "active": 16,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "equipo",
+      "active": 17,
+      "width": 1440,
+      "view": 1440
+    },
+    {
+      "id": "referencias",
+      "active": 18,
+      "width": 1440,
+      "view": 1440
+    }
+  ],
+  "errors": [],
+  "external": []
+}

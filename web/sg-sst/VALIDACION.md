@@ -1,19 +1,20 @@
-# Validación de la presentación web
+# Comprobaciones de la web vertical
 
-Verificada en Chromium con la versión final del diseño y del contenido:
+Las pruebas de `scripts/qa_scroll.mjs` finalizaron con código 0 en Chromium. El informe está en `qa-scroll/report.json`.
 
-- 19 pantallas con Anton e imágenes originales cargadas; sin desbordamiento vertical en escritorio.
-- 15 pasos de explicación: los cinco pasos de cada formato son seleccionables mediante el cursor y el clic.
-- Tres visores de registros: abrir/cerrar, ampliar, ajustar y cambiar a la vista de lectura.
-- 250 celdas no vacías de los Excel originales y sus combinaciones conservadas: 73 en el Formato 2, 117 en el Formato 7 y 60 en el Formato 8.
-- Cursor con espera de 0,7 segundos, opción de pausar, flechas, índice y puntero desde la página y desde el contenido.
-- Modo expositor: ventana del público, notas privadas editables guardadas, sincronización de pantalla y paso. El contenido permanece visible cuando una ventana pasa a segundo plano.
-- Vista táctil de 390 × 844, seis pantallas con contenido denso, desplazamiento vertical y ningún desbordamiento horizontal.
-- Preferencia de movimiento reducido del sistema.
-- Ningún error JavaScript ni solicitud externa de recursos durante la presentación. El HTML incorpora todos los recursos necesarios para mostrarla.
+- Scroll vertical nativo con rueda, sin iframe de diapositivas ni desplazamiento horizontal.
+- 19 apartados accesibles en escritorio; las imágenes originales y las fuentes Anton, Manrope y Fraunces cargaron correctamente.
+- 15 pasos de lectura que actualizan su indicador al desplazarse.
+- Tres visores completos: apertura y cierre con Escape, zoom con botones y rueda, ajuste y arrastre. Los enlaces de Google Sheets se conservaron.
+- Lectura de 73, 117 y 60 celdas no vacías de los tres Excel, con sus combinaciones: 250 valores.
+- Navegación por permanencia del cursor, opción para desactivarla, índice, flechas verticales y teclado. El scroll bajo un cursor inmóvil no dispara cambios de apartado.
+- Sonido optativo, puntero de exposición y movimiento reducido.
+- Notas privadas editables guardadas en el navegador, cronómetro y ventana del público sincronizada por posición.
+- Todos los apartados caben sin desbordamiento horizontal en 390 px y 768 px. Los controles del visor y la lectura de celdas se probaron en ambos tamaños.
+- Ningún error de navegador ni solicitud externa para cargar contenido, fuentes, imágenes o scripts.
 
-Hyperframes 0.8.142, 19 muestras: `ok=true`, `browserSkipped=false`; cero errores de lint, ejecución, diseño y contraste. Cero avisos de diseño o contraste. Los 11 avisos restantes describen transiciones CSS de las interacciones en vivo; se desactivan en la composición editable para las búsquedas deterministas.
+El control de pantalla completa solicita la API nativa con activación real del usuario. Chromium administrado deja la solicitud pendiente incluso en una página mínima: la entrada real a pantalla completa no pudo verificarse en este entorno. No se simula pantalla completa.
 
-La pantalla completa está conectada al control nativo y a F. La prueba confirmó que el botón llama a la API con activación del usuario. Este Chromium administrado deja pendiente la solicitud incluso en una página mínima, por lo que la entrada efectiva a pantalla completa no pudo verificarse aquí. No se simula una entrada exitosa.
+Después de la prueba completa se incorporó una segunda fotografía original del PPT a la sección de empresa. Se comprobó su carga, apertura en el visor y ausencia de desbordamiento en escritorio y móvil. El HTML portátil y la copia de `/docs` coinciden; el ZIP se extrae íntegro y contiene ese mismo HTML.
 
-La fuente visual landonorris.com y el visor público raw.githack.com están bloqueados por la política de red de este entorno. Se verificó la presentación por HTTP local y se publica el HTML en el repositorio público del usuario; la respuesta del visor externo no se puede verificar desde esta máquina. La descarga del HTML es la alternativa independiente del visor. La configuración de red necesaria queda guardada para revisión en los ajustes del entorno.
+Los cuatro sitios de las nuevas fotos referenciales devuelven CONNECT 403 desde el proxy de red. La configuración necesaria se guardó como borrador; la incorporación de esas cuatro imágenes está pendiente de que se guarde y publique el entorno. Las fotos originales del PPT y las de Lando Norris sí se incluyen.

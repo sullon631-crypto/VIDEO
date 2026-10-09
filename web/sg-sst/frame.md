@@ -1,14 +1,9 @@
----
-bg: '#F6F0E7'
-fg: '#142341'
-accent: '#FF762F'
-navy: '#142341'
-red: '#B72F34'
-yellow: '#F9D651'
-heading_font: Anton
-body_font: Manrope
----
+# Dirección visual de la web vertical
 
-Dirección editorial de seguridad industrial: tipografía condensada monumental, números grandes, bloques diagonales, líneas de precisión y fotografías del trabajo minero. El naranja aparece como superficies de portada, indicadores y acentos de los casos. Azul profundo para legibilidad y contexto; crema para evidencia; rojo para hallazgos y amarillo para decisiones.
+Portada con titular Anton de tres líneas, acento coral, fotografía de Lando Norris en un arco grande sobre círculo azul y pequeña tarjeta verde con lettering Fraunces. El recorrido combina tipografía editorial de gran escala, aire entre bloques, fotos originales de los casos y cambios de fondo crema/verde/azul/lavanda.
 
-Jerarquía: titulares de 86–160 px en el lienzo de escritorio; texto explicativo de 40–48 px; etiquetas auxiliares de 25–32 px. Una idea principal por pantalla. Las capturas de documentos siempre se muestran completas con ampliación independiente. Movimiento de entrada 0.55–0.75 s, 28 px, easing power3.out; sin rebotes. Color y figuras de fondo acompañan la entrada; las interacciones se desactivan en escenas ocultas. En dispositivos pequeños cambia a un lienzo vertical con rejillas de una columna y texto grande.
+El abanico de tres fotos en la ruta se despliega con el scroll. Las tarjetas enlazan a normas, empresa y casos. Los capítulos académicos usan fotografía y palabras de acción; las decisiones y planes usan diagramas de flujo o tarjetas de lectura. Los tres formatos se recorren mediante cinco artículos verticales y un documento que permanece visible en escritorio. Su versión móvil apila el documento y los pasos.
+
+Las apariciones son de opacidad y desplazamiento vertical, con ease power3.out. El retrato tiene un parallax suave y el abanico sigue el scroll. Los botones responden sin retrasar el contenido. No se captura la rueda para navegar por escenas; se usa scroll nativo. Solo el visor captura la rueda para ampliar, ofrece arrastre y pellizco, y preserva las imágenes originales completas.
+
+Encabezado fijo, progreso superior, indicador de posición inferior, botones de anterior/siguiente y herramientas. Se incluyen índice, pantalla completa, notas privadas, ventana para el público, sonido optativo y movimiento reducido.

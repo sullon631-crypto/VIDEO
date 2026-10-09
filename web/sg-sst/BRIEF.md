@@ -1,17 +1,17 @@
 ---
-workflow: slideshow
-flow: automation
+workflow: vertical-website
+flow: native-scroll
 destination: presentacion-universitaria-web
 language: es-PE
 aspect: responsive
 ---
 
-Presentación web interactiva basada en las 19 diapositivas de «Presentación Casos SG-SST grupo 1.pptx» y el informe adjunto. El usuario expondrá el contenido en vivo. Requiere ANTON, naranja dominante, azul, rojo y amarillo; titulares grandes, movimiento suave, navegación por cursor, flechas pequeñas, pantalla completa, imágenes del PPT y zoom para explicar los formatos 2, 7 y 8.
+Crear una exposición mediante una página tradicional con scroll vertical, apariciones progresivas y movimiento fluido. El usuario sustituyó expresamente el anterior pase horizontal. Usar Anton como titular principal, Manrope para lectura y Fraunces como acento editorial. Reducir naranja; usar crema, azul, verde, coral y otros tonos acordes. Referencias: landonorris.com y las capturas del usuario; portada de fotografía grande y titular al estilo de la referencia de esquí, sin atribuir esa imagen a Lando Norris.
 
-Se conserva el orden académico: portada, agenda, normas, empresa, tres casos con sus registros, acciones correctivas, resumen, conclusiones, recomendaciones, integrantes y referencias. Cada formato tiene pasos de explicación, imagen original, tabla de lectura de su Excel y el enlace de Google Sheets facilitado por el usuario. Ante discrepancias se toma el nuevo PPT: 20 participantes, cinco integrantes, fecha de presentación 9 de octubre de 2026. El nombre del quinto integrante se conserva como aparece en el PPT: Iilder Branderly Merino Zurita.
+Mantener los 19 apartados en el orden del PPT, sus fotografías originales y el contenido de los formatos 2, 7 y 8. Cada formato tiene cinco artículos de explicación que aparecen al bajar, documento persistente en escritorio, ampliación, lectura de 250 celdas originales y los enlaces exactos aportados. El nuevo PPT determina cinco integrantes, 20 asistentes y fecha académica 09/10/2026. Iilder Branderly Merino Zurita se conserva como figura en la fuente.
 
-Mejoras: índice de escenas, navegación por permanencia del cursor configurable, progreso, atajos, puntero para señalar, movimiento reducido, notas editables del presentador y vista de audiencia sincronizada de Hyperframes. El visor permite zoom, arrastre y vista de lectura. Sin avances automáticos ni reproducción de voz.
+Incluir hover de fotografías, entrada por permanencia del cursor configurable, pequeñas flechas arriba/abajo, índice, pantalla completa, progreso, sonido suave opcional, notas privadas editables y ventana de audiencia sincronizada. Móvil conserva el scroll nativo sin inmovilizar documentos largos. Incluir movimiento reducido y acceso por teclado.
 
-La referencia directa landonorris.com devuelve 403 en este entorno. Se consultó la documentación pública de una reconstrucción de referencia para estudiar titulares fluidos, transiciones y control por cursor; no se reutilizan su marca ni sus imágenes. Las fotografías y registros proceden del PPT. ANTON y Manrope son archivos locales de Google Fonts con sus licencias OFL.
+Se consultó directamente landonorris.com y su página off-track. Cuatro fotografías originales descargadas desde una copia pública de sus mismos archivos se incluyen con procedencia en assets/image-sources.json. Las imágenes son editoriales, no evidencia de los casos de Chinalco. Los documentos originales se muestran completos en el visor. El usuario envió cuatro capturas nuevas de minería y extintores; aportó sus cuatro páginas de origen, registradas en assets/supplementary-sources.json. El filtro de red devuelve CONNECT 403 para esas páginas; se guardaron los dominios necesarios en la configuración del entorno. Descargar e incorporar después de la revisión/publicación de esa configuración, rotulando las fotos como referenciales.
 
-Se entrega una página autocontenida para abrir sin instalaciones y una versión pública accesible por URL. Los documentos originales y los videos previos se conservan.
+Entregar HTML autocontenido y ZIP offline, además de URL HTTPS comprobada. Conservar documentos, videos y fuentes anteriores.
