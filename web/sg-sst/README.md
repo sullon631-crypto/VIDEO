@@ -49,4 +49,6 @@ SG_SITE_URL=http://127.0.0.1:8082/ node web/sg-sst/scripts/qa_scroll.mjs
 
 La web actual es un sitio convencional con scroll; los archivos `composition/`, `composition.*`, `wrapper.*` y `scripts/build.py` conservan la versión anterior del pase de diapositivas. Ese constructor no genera la nueva web vertical. Los videos anteriores permanecen conservados.
 
-GitHub Pages publica la carpeta `/docs` de la rama `presentacion-web`. No se necesitan compilación remota ni llamadas externas para cargar la presentación.
+La web pública está en https://raw.githack.com/sullon631-crypto/VIDEO/presentacion-web/docs/index.html . El ZIP público se descarga desde https://raw.githubusercontent.com/sullon631-crypto/VIDEO/presentacion-web/docs/Presentacion-SG-SST.zip . Se comprobaron las respuestas HTTP 200 y la coincidencia de ambas entregas con los archivos locales. En la primera visita, el servidor muestra un aviso de contenido externo: pulsa **Open the page**. Después se verificaron los 19 apartados, la lectura y zoom del Formato 8 y la vista móvil en el enlace público.
+
+La carpeta `/docs` está preparada para GitHub Pages. Su activación mediante API fue rechazada con `403 Resource not accessible by integration`; GitHub Pages no está habilitado. El enlace RawGithack de esta versión sí respondió correctamente. No se necesita compilación remota para cargar la presentación.

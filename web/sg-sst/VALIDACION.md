@@ -18,3 +18,13 @@ El control de pantalla completa solicita la API nativa con activación real del 
 Después de la prueba completa se incorporó una segunda fotografía original del PPT a la sección de empresa. Se comprobó su carga, apertura en el visor y ausencia de desbordamiento en escritorio y móvil. El HTML portátil y la copia de `/docs` coinciden; el ZIP se extrae íntegro y contiene ese mismo HTML.
 
 Los cuatro sitios de las nuevas fotos referenciales devuelven CONNECT 403 desde el proxy de red. La configuración necesaria se guardó como borrador; la incorporación de esas cuatro imágenes está pendiente de que se guarde y publique el entorno. Las fotos originales del PPT y las de Lando Norris sí se incluyen.
+
+## Entrega pública
+
+La rama `presentacion-web` se publicó en el repositorio. El HTML público de RawGithack y el ZIP de raw.githubusercontent.com devolvieron HTTP 200. Los archivos descargados coinciden con el HTML y ZIP locales; el ZIP contiene el mismo HTML y se extrae sin errores.
+
+URL: https://raw.githack.com/sullon631-crypto/VIDEO/presentacion-web/docs/index.html
+
+La API de GitHub Pages rechazó la activación con `403 Resource not accessible by integration`; no se afirma que GitHub Pages esté habilitado.
+
+La comprobación del navegador sobre el enlace público también finalizó con código 0. Se aceptó mediante el botón **Open the page** el aviso inicial del servidor, y después se verificaron los 19 apartados, carga de imágenes, 60 celdas y zoom del Formato 8, y ausencia de desbordamiento a 390 px. No hubo errores de JavaScript. Resultado: `qa-scroll/public-report.json`.
