@@ -1,10 +1,20 @@
 {
-  "url": "https://raw.githack.com/sullon631-crypto/VIDEO/presentacion-web/docs/index.html",
+  "url": "https://raw.githack.com/sullon631-crypto/VIDEO/1c04c98/docs/index.html",
   "status": 200,
   "host_content_notice": true,
   "sections": 19,
+  "unrelated_photos": 0,
+  "source_status": {
+    "chinalco-plant": "embedded",
+    "chinalco-mine": "embedded",
+    "extinguisher-course": "embedded"
+  },
+  "source_failures": [],
+  "source_originals_verified": true,
+  "photo_source_requests": 0,
   "format8_cells": 60,
   "zoom": true,
   "mobile_no_overflow": true,
-  "errors": []
+  "errors": [],
+  "plant_original_width": 8192
 }

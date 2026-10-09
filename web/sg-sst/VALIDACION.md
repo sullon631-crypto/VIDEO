@@ -21,11 +21,11 @@ La prueba completa se repitió después de sustituir las fotos ajenas al caso y 
 
 La rama `presentacion-web` se publicó en el repositorio. El HTML público de RawGithack y el ZIP de raw.githubusercontent.com devolvieron HTTP 200. Los archivos descargados coinciden con el HTML y ZIP locales; el ZIP contiene el mismo HTML y se extrae sin errores.
 
-URL: https://raw.githack.com/sullon631-crypto/VIDEO/presentacion-web/docs/index.html
+URL de la revisión verificada: https://raw.githack.com/sullon631-crypto/VIDEO/1c04c98/docs/index.html
 
 La API de GitHub Pages rechazó la activación con `403 Resource not accessible by integration`; no se afirma que GitHub Pages esté habilitado.
 
-La comprobación del navegador sobre el enlace público también finalizó con código 0. Se aceptó mediante el botón **Open the page** el aviso inicial del servidor, y después se verificaron los 19 apartados, carga de imágenes, 60 celdas y zoom del Formato 8, y ausencia de desbordamiento a 390 px. No hubo errores de JavaScript. Resultado: `qa-scroll/public-report.json`.
+La comprobación del navegador sobre el enlace público también finalizó con código 0. Se aceptó mediante el botón **Open the page** el aviso inicial del servidor, y después se verificaron los 19 apartados, las tres fotos nuevas incrustadas, el visor original de la planta de 8192 px, 60 celdas y zoom del Formato 8, y ausencia de desbordamiento a 390 px. No se solicitaron los sitios de las fotografías ni hubo errores de JavaScript. Resultado: `qa-scroll/public-report.json`.
 
 ## Sustitución de imágenes ajenas al caso
 
@@ -33,4 +33,4 @@ Se retiraron las fotografías de Lando de la portada, el abanico y los datos de 
 
 Las tres fotografías originales se recuperaron de respuestas HTTP reales de Chromium, tras cargar la web publicada. Se inspeccionaron visualmente; la foto de la planta coincide con la captura del usuario. Sus URL, dimensiones y hashes se registran en `assets/case-image-downloads.json`. El acceso directo con curl había devuelto CONNECT 403, pero la descarga normal del navegador sí funcionó. No se utilizaron fixtures para obtener estas fotografías.
 
-Las tarjetas usan previews WebP; el visor abre los originales JPEG sin cambios, con resolución de 8192×4608, 1400×950 y 1280×960. Los JPEG se incrustan una sola vez en los datos del HTML portátil y se conservan en el ZIP. `qa_images.mjs` compara sus hashes con los originales descargados y verifica el zoom, los 19 apartados y el modo sin conexión. Chromium administrado bloquea la navegación a URL file; el ensayo sin conexión carga el HTML portátil exacto desde memoria con la red desactivada. Informe: `qa-scroll/image-report.json`.
+Las tarjetas usan previews WebP; el visor abre los originales JPEG sin cambios, con resolución de 8192×4608, 1400×950 y 1280×960. Los JPEG se incrustan una sola vez en los datos del HTML portátil y se conservan en el ZIP. `qa_images.mjs` finalizó con código 0: sus hashes coinciden con los originales descargados, y funcionan el zoom, los 19 apartados y el modo sin conexión. Chromium administrado bloquea la navegación a URL file; el ensayo sin conexión carga el HTML portátil exacto desde memoria con la red desactivada. Informe: `qa-scroll/image-report.json`.
