@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "All unrelated photos removed; embedded mining/training fallback is readable and zoomable when source requests fail.",
+    "Three supplied source routes load and update hero/cards/viewer in the intercepted success scenario.",
+    "19 sections retained; three replacement-image viewers support zoom; desktop/mobile layout has no horizontal overflow; no JavaScript errors."
+  ],
+  "source_downloads_verified": false,
+  "source_download_limitation": "Source domains return proxy CONNECT 403. Success loading is verified with intercepted image fixtures, not the actual remote photos.",
+  "errors": []
+}

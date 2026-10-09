@@ -6,12 +6,14 @@ const output=new URL('../qa-scroll/',import.meta.url).pathname;
 await fs.mkdir(output,{recursive:true});
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const browser=await puppeteer.launch({executablePath:process.env.HYPERFRAMES_BROWSER_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
-const report={url,checks:[],screens:[],errors:[],external:[]};
+const report={url,checks:[],screens:[],errors:[],external:[],sourceRequests:[],sourceFailures:[]};
 try{
   const page=await browser.newPage();await page.setViewport({width:1440,height:900});
   page.on('pageerror',error=>report.errors.push(error.message));
-  page.on('requestfailed',request=>report.errors.push(request.url().slice(0,120)+': '+request.failure().errorText));
-  page.on('request',request=>{if(/^https?:/.test(request.url())&&!request.url().startsWith(url))report.external.push(request.url());});
+  const sourceHosts=new Set(['www.chinalco.com.pe','www.horizonteminero.com','www.miradiols.cl']);
+  const optionalSource=request=>{try{return sourceHosts.has(new URL(request.url()).hostname);}catch(_){return false;}};
+  page.on('requestfailed',request=>{const message=request.url().slice(0,120)+': '+request.failure().errorText;if(optionalSource(request))report.sourceFailures.push(message);else report.errors.push(message);});
+  page.on('request',request=>{if(optionalSource(request))report.sourceRequests.push(request.url());else if(/^https?:/.test(request.url())&&!request.url().startsWith(url))report.external.push(request.url());});
   await page.goto(url,{waitUntil:'networkidle0'});await page.evaluate(()=>document.fonts.ready);await wait(1400);
   assert.equal(await page.$$eval('.web-section',nodes=>nodes.length),19);
   assert.equal(await page.$$eval('iframe',nodes=>nodes.length),0);
@@ -88,6 +90,6 @@ try{
   }
   report.checks.push('All sections fit 390px mobile and 768px tablet; document and cell zoom controls remain usable');
   assert.equal(report.errors.length,0);assert.equal(report.external.length,0);
-  report.checks.push('Portable page makes no external requests to load content, scripts, fonts or images; no browser errors');
+  report.checks.push('Core content, scripts, fonts and PPT fallback photos load locally; optional source photos use only the supplied hosts; no JavaScript errors');
   console.log(JSON.stringify({checks:report.checks,errors:report.errors,sections:report.screens.length},null,2));
 }finally{await fs.writeFile(output+'report.json',JSON.stringify(report,null,2));await browser.close();}

@@ -4,7 +4,7 @@ Exposición interactiva de 19 apartados basada en el nuevo PPT «Presentación C
 
 ## Abrir y exponer
 
-`index.html` es una página portátil con fotografías, documentos, fuentes, scripts y sonido incluidos. Puede abrirse directamente en Chrome, Edge o Firefox, o alojarse en cualquier servidor estático. `Presentacion-SG-SST.zip` contiene este archivo y las instrucciones. Google Sheets y las normas enlazadas necesitan internet.
+`index.html` es una página portátil con fotografías del PPT, documentos, fuentes, scripts y sonido incluidos. Las nuevas imágenes de Chinalco, Horizonte Minero y Mi Radio se cargan desde sus fuentes con internet; si alguna no responde, se muestra una fotografía pertinente del PPT. Puede abrirse directamente en Chrome, Edge o Firefox, o alojarse en cualquier servidor estático. `Presentacion-SG-SST.zip` contiene este archivo y las instrucciones. Google Sheets y las normas enlazadas necesitan internet.
 
 - Rueda del ratón, trackpad o gesto vertical: recorrer el contenido. Los documentos se mantienen a la vista en escritorio mientras aparecen sus cinco pasos de lectura.
 - Flechas ↑/↓ inferiores o del teclado: ir al apartado anterior o siguiente. La navegación es vertical.
@@ -21,7 +21,9 @@ El nuevo PPT determina la portada, los cinco integrantes, las referencias y la f
 
 Los registros 2, 7 y 8 conservan 73, 117 y 60 celdas no vacías, respectivamente: **250 valores originales**, además de sus combinaciones. La página no modifica los Google Sheets. Las imágenes del PPT se conservan y se pueden ampliar completas.
 
-Las fotografías de Lando Norris se usan como elementos editoriales por petición del usuario; no representan trabajadores de Chinalco. El crédito aparece en la portada y el pie. `assets/image-sources.json` documenta las páginas oficiales, las URL originales y las copias públicas de los mismos archivos utilizadas para descargarlos. No se reutilizó código de la web de referencia. Los cuatro enlaces suplementarios de minería/extintores están registrados en `assets/supplementary-sources.json`. Sus sitios devuelven CONNECT 403 por el filtro de red del entorno. Se añadieron los dominios a la configuración en borrador; la descarga e incorporación queda pendiente de que el usuario guarde y publique esa configuración. Estas imágenes aún no forman parte de la web publicada.
+La portada y el abanico ya no utilizan imágenes de Lando Norris. `assets/case-image-sources.json` registra las tres fuentes elegidas por el usuario: la imagen oficial de mantenimiento de Chinalco, la capacitación en extintores de Mi Radio y el artículo de Horizonte Minero. La web consulta la imagen destacada del artículo mediante la API pública de WordPress y carga las otras dos imágenes por sus URL directas. Estas fotos son de contexto; la capacitación de Mi Radio se identifica como referencial y no se presenta como evidencia de una actividad de Chinalco.
+
+Los tres dominios de origen devuelven CONNECT 403 desde el entorno, por lo que sus fotografías no pudieron descargarse ni verificarse aquí. La carga con éxito se probó con respuestas interceptadas y fotografías del PPT como fixtures; también se probó el fallo de las fuentes. La web conserva las fotos del PPT como respaldo durante la carga, si ocurre un error y al usar el ZIP sin internet. No se afirma que las fotografías nuevas estén incrustadas en el ZIP.
 
 Anton, Manrope y Fraunces se incluyen con sus licencias SIL Open Font License. Las dependencias GSAP se incluyen localmente.
 
@@ -45,7 +47,8 @@ SG_SITE_URL=http://127.0.0.1:8082/ node web/sg-sst/scripts/qa_scroll.mjs
 - `site.css` y `site.js`: diseño e interacciones.
 - `site.html`: versión editable que carga los archivos locales.
 - `workbooks.json`: celdas y combinaciones de los Excel.
-- `qa-scroll/report.json`: resultado de las comprobaciones en Chromium.
+- `qa-scroll/report.json`: comprobación completa de las funciones de exposición de la versión actual.
+- `node web/sg-sst/scripts/qa_images.mjs`: prueba la selección temática, los tres visores y el respaldo; resultado en `qa-scroll/image-report.json`. La carga remota exitosa se prueba mediante fixtures, sin afirmar acceso real a las fuentes bloqueadas.
 
 La web actual es un sitio convencional con scroll; los archivos `composition/`, `composition.*`, `wrapper.*` y `scripts/build.py` conservan la versión anterior del pase de diapositivas. Ese constructor no genera la nueva web vertical. Los videos anteriores permanecen conservados.
 
