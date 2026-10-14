@@ -1,0 +1,21 @@
+DIBISER — video promocional
+Duración: 36 segundos. Formato: horizontal 1920 × 1080, 30 fps.
+
+DIBISER-video.html: HTML autónomo con todos los recursos incluidos. Ábrelo en un navegador moderno y pulsa Reproducir. Si el navegador restringe archivos locales, sirve esta carpeta con python -m http.server y abre http://localhost:8000/DIBISER-video.html.
+
+El proyecto editable incluye index.html, compositions/frames/, assets/, STORYBOARD.md y SCRIPT.md. Desde la carpeta del proyecto:
+  npm install
+  npm run check
+  npm run dev
+  npm run render -- --quality high --fps 30 --output renders/video.mp4
+
+Secuencia:
+01: Fuerza que mueve tu obra (0–4 s)
+02: Alquiler de maquinaria pesada / cargador frontal (4–14 s)
+03: Venta de agregados / volquete Volvo (14–24 s)
+04: Tipos de agregados (24–30 s)
+05: Cotiza tu proyecto / dibiser12@gmail.com (30–36 s)
+
+Audio: música original a 120 BPM, efectos sintetizados originales y narración neural en español. Mezcla aproximada −16 LUFS, pico real −2 dB. El master ya contiene la mezcla; no superponerlo con los stems.
+
+Imágenes de maquinaria: representaciones promocionales generadas inspiradas en la paleta y referencias suministradas. Logo real de la referencia DIBISER. No se añadieron números telefónicos, precios, capacidades ni certificaciones.
