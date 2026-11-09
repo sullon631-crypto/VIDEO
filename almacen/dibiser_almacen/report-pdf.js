@@ -48,10 +48,10 @@ async function buildReportPDF(records, date) {
   heading('Resumen de operación');
   await table(['Fecha de operación','Movimientos','Entradas','Salidas','Movilizaciones','Pendientes de autorización'],[[dateLabel,rows.length,rows.filter(r=>r.tipo==='Entrada').length,rows.filter(r=>r.tipo==='Salida').length,rows.filter(r=>r.tipo==='Movilización').length,rows.filter(r=>r.autorizacion==='Pendiente').length]]);
   heading('Detalle de movimientos');
-  await table(['N.º / Hora','Placa / Serie','Tipo','Cliente / Destino','Conductor','Material','Cantidad','Guía','Autorización'],rows.length?rows.map((r,i)=>[`${i+1}\n${new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false})}`,text(r.placa)+(r.carreta?'\nCarreta: '+text(r.carreta):'')+(r.camaBaja?'\nCama baja: '+text(r.camaBaja):''),text(r.tipo),text(r.cliente),text(r.conductor),text(r.material),`${number(r.cantidad)} ${text(r.unidad)}`,text(r.guia)||'No registrada',text(r.autorizacion)||'No registrada']):[['—','Sin movimientos para esta fecha','','','','','','','']],{0:{cellWidth:17},1:{cellWidth:26},2:{cellWidth:18},3:{cellWidth:47},4:{cellWidth:33},5:{cellWidth:51},6:{cellWidth:22},7:{cellWidth:25},8:{cellWidth:30}});
+  await table(['N.º / Hora','Placa / Serie','Tipo','Cliente / Destino','Conductor','Material','Cantidad','Guía','Autorización'],rows.length?rows.map((r,i)=>[`${i+1}\n${new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false})}`,text(r.placa)+(r.carreta?'\nCarreta: '+text(r.carreta):'')+(r.camaBaja?'\nCama baja: '+text(r.camaBaja):''),text(r.tipo),text(r.cliente),text(r.conductor),text(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:r.material),`${number(r.cantidad)} ${text(r.unidad)}`,text(r.guia)||'No registrada',text(r.autorizacion)||'No registrada']):[['—','Sin movimientos para esta fecha','','','','','','','']],{0:{cellWidth:17},1:{cellWidth:26},2:{cellWidth:18},3:{cellWidth:47},4:{cellWidth:33},5:{cellWidth:51},6:{cellWidth:22},7:{cellWidth:25},8:{cellWidth:30}});
   heading('Consolidado por material, unidad y movimiento');
   const sums=new Map();
-  for(const r of rows){const key=JSON.stringify([r.material,r.unidad,r.tipo]);const val=sums.get(key)||{material:r.material,unidad:r.unidad,tipo:r.tipo,total:0,count:0};val.total+=Number(r.cantidad);val.count++;sums.set(key,val)}
+  for(const r of rows){const key=JSON.stringify([r.maquinariaTransportada||r.material,r.unidad,r.tipo]);const val=sums.get(key)||{material:r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:r.material,unidad:r.unidad,tipo:r.tipo,total:0,count:0};val.total+=Number(r.cantidad);val.count++;sums.set(key,val)}
   await table(['Material','Unidad','Movimiento','Registros','Cantidad total'],sums.size?[...sums.values()].map(r=>[text(r.material),text(r.unidad),text(r.tipo),r.count,number(r.total)]):[['Sin materiales registrados','—','—','0','0']]);
   heading('Trazabilidad y observaciones');
   await table(['N.º','Código del movimiento','Responsable','Observaciones / incidencias'],rows.length?rows.map((r,i)=>[i+1,text(r.id),text(r.responsable),[r.configTransporte||'Unidad sola',r.carreta?'Carreta: '+r.carreta:'',r.camaBaja?'Cama baja: '+r.camaBaja:'',r.observaciones||''].filter(Boolean).join(' · ')]):[['—','Sin movimientos','—','—']],{0:{cellWidth:14},1:{cellWidth:66},2:{cellWidth:62},3:{cellWidth:127}});
@@ -72,8 +72,6 @@ async function buildReportPDF(records, date) {
       }y+=67;
     }
   }else{heading('Evidencias fotográficas');doc.setFont('Inter','normal');doc.setFontSize(9);doc.text('No se adjuntaron fotografías a los movimientos de esta fecha.',margin,y);y+=12}
-  if(y>bottom-30){doc.addPage();y=43}
-  doc.setDrawColor(160);doc.line(margin,y+15,112,y+15);doc.setFontSize(9);doc.setTextColor(...navy);doc.text('Revisado por / Firma',margin,y+21);
   const pages=doc.getNumberOfPages();
   for(let p=1;p<=pages;p++){
     doc.setPage(p);doc.setFillColor(...navy);doc.rect(0,0,297,3,'F');
