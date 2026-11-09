@@ -13,8 +13,30 @@ async function buildReportPDF(records, date) {
   const number=n=>Number(n||0).toLocaleString('es-PE',{maximumFractionDigits:2});
   const dateLabel=date.split('-').reverse().join('/');
   const generated=new Date().toLocaleString('es-PE',{timeZone:'America/Lima'});
-  let logo;
-  try {const im=new Image();im.src='logo.jpeg';await im.decode();logo=im;}catch{}
+  // Recorta únicamente los márgenes blancos del logotipo y conserva su proporción.
+  let logo=null, logoSize=null;
+  try {
+    const im=new Image();im.src='logo.jpeg';await im.decode();
+    const canvas=document.createElement('canvas');canvas.width=im.naturalWidth;canvas.height=im.naturalHeight;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0);
+    const {data,width,height}=ctx.getImageData(0,0,canvas.width,canvas.height);
+    let minX=width,minY=height,maxX=-1,maxY=-1;
+    for(let y=0;y<height;y++){for(let x=0;x<width;x++){
+      const k=(y*width+x)*4;
+      if(data[k+3]>40 && Math.min(data[k],data[k+1],data[k+2])<235){
+        minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);
+      }
+    }}
+    if(maxX<minX){minX=0;minY=0;maxX=width-1;maxY=height-1;}
+    const pad=5,x0=Math.max(0,minX-pad),y0=Math.max(0,minY-pad);
+    const w=Math.min(width-x0,maxX-minX+1+pad*2),h=Math.min(height-y0,maxY-minY+1+pad*2);
+    const trimmed=document.createElement('canvas');trimmed.width=w;trimmed.height=h;
+    const out=trimmed.getContext('2d');out.fillStyle='#FFFFFF';out.fillRect(0,0,w,h);
+    out.drawImage(canvas,x0,y0,w,h,0,0,w,h);
+    logo=trimmed;
+    const scale=Math.min(32/w,23/h);
+    logoSize={width:w*scale,height:h*scale};
+  }catch(err){console.warn('Logo no disponible para el PDF:',err)}
   let y=43;
   function heading(label){if(y>bottom-20){doc.addPage();y=43}doc.setFont('Inter','bold');doc.setFontSize(12);doc.setTextColor(...navy);doc.text(label,margin,y);y+=5}
   async function table(head,body,widths){
@@ -55,9 +77,9 @@ async function buildReportPDF(records, date) {
   const pages=doc.getNumberOfPages();
   for(let p=1;p<=pages;p++){
     doc.setPage(p);doc.setFillColor(...navy);doc.rect(0,0,297,3,'F');
-    if(logo)doc.addImage(logo,'JPEG',margin,8,21,21);
-    doc.setTextColor(...navy);doc.setFont('Inter','bold');doc.setFontSize(16);doc.text('DIBISER E.I.R.L.',40,15);doc.setFontSize(10);doc.text('REPORTE DIARIO DE MOVIMIENTOS DE ALMACÉN',40,22);
-    doc.setFont('Inter','normal');doc.setFontSize(8);doc.text(`Fecha: ${dateLabel}   |   Hora de referencia: Perú (UTC-5)`,40,28);
+    if(logo && logoSize)doc.addImage(logo,'PNG',margin+(32-logoSize.width)/2,7+(23-logoSize.height)/2,logoSize.width,logoSize.height);
+    doc.setTextColor(...navy);doc.setFont('Inter','bold');doc.setFontSize(16);doc.text('DIBISER E.I.R.L.',52,15);doc.setFontSize(10);doc.text('REPORTE DIARIO DE MOVIMIENTOS DE ALMACÉN',52,22);
+    doc.setFont('Inter','normal');doc.setFontSize(8);doc.text(`Fecha: ${dateLabel}   |   Hora de referencia: Perú (UTC-5)`,52,28);
     doc.setDrawColor(...teal);doc.line(margin,34,283,34);
     doc.setDrawColor(210);doc.line(margin,197,283,197);doc.setTextColor(85);doc.setFontSize(7);
     doc.text(`Control de almacén · Generado: ${generated} (Perú) · Registros de este dispositivo`,margin,202);doc.text(`Página ${p} de ${pages}`,283,202,{align:'right'});
