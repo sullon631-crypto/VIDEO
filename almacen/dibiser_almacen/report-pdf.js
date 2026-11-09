@@ -45,50 +45,103 @@ async function buildReportPDF(records, date) {
     y=doc.lastAutoTable.finalY+10;
   }
   doc.setProperties({title:`DIBISER - Reporte de movimientos ${date}`,subject:'Control diario de almacén',author:'DIBISER E.I.R.L.'});
-  heading('Resumen de operación');
-  await table(['Fecha de operación','Movimientos','Entradas','Salidas','Pendientes de autorización'],[[dateLabel,rows.length,rows.filter(r=>r.tipo==='Entrada').length,rows.filter(r=>r.tipo==='Salida').length,rows.filter(r=>r.autorizacion==='Pendiente').length]]);
-  heading('Detalle de movimientos');
-  await table(['N.º / Hora','Placa / Serie','Tipo','Cliente / Destino','Conductor','Material','Cantidad','Guía','Autorización'],rows.length?rows.map((r,i)=>[`${i+1}\n${new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false})}`,text(r.placa)+(r.carreta?'\nCarreta: '+text(r.carreta):'')+(r.camaBaja?'\nCama baja: '+text(r.camaBaja):''),text(r.tipo),text(r.cliente),text(r.conductor),text(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:r.material),`${number(r.cantidad)} ${text(r.unidad)}`,text(r.guia)||'No registrada',text(r.autorizacion)||'No registrada']):[['—','Sin movimientos para esta fecha','','','','','','','']],{0:{cellWidth:17},1:{cellWidth:26},2:{cellWidth:18},3:{cellWidth:47},4:{cellWidth:33},5:{cellWidth:51},6:{cellWidth:22},7:{cellWidth:25},8:{cellWidth:30}});
-  heading('Consolidado por material, unidad y movimiento');
-  const sums=new Map();
-  for(const r of rows){const key=JSON.stringify([r.maquinariaTransportada||r.material,r.unidad,r.tipo]);const val=sums.get(key)||{material:r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:r.material,unidad:r.unidad,tipo:r.tipo,total:0,count:0};val.total+=Number(r.cantidad);val.count++;sums.set(key,val)}
-  await table(['Material','Unidad','Movimiento','Registros','Cantidad total'],sums.size?[...sums.values()].map(r=>[text(r.material),text(r.unidad),text(r.tipo),r.count,number(r.total)]):[['Sin materiales registrados','—','—','0','0']]);
-  heading('Trazabilidad y observaciones');
-  await table(['N.º','Código del movimiento','Responsable','Observaciones / incidencias'],rows.length?rows.map((r,i)=>[i+1,text(r.id),text(r.responsable),[r.configTransporte||'Unidad sola',r.carreta?'Carreta: '+r.carreta:'',r.camaBaja?'Cama baja: '+r.camaBaja:'',r.observaciones||''].filter(Boolean).join(' · ')]):[['—','Sin movimientos','—','—']],{0:{cellWidth:14},1:{cellWidth:66},2:{cellWidth:62},3:{cellWidth:127}});
-  // Cada movimiento con fotografía tiene su propio bloque de evidencia identificado.
-  // No se crea una página adicional cuando el día no tiene fotografías.
-  const evidence=rows.map((r,i)=>({record:r,number:i+1})).filter(({record})=>Array.isArray(record.fotos)&&record.fotos.length>0);
-  if(evidence.length){
-    doc.addPage();y=43;heading('Evidencias fotográficas por movimiento');
-    for(const {record:r,number:i} of evidence){
-      await AppMotion.yieldPaint();
-      const time=new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false});
-      const detail=[
-        'Movimiento '+i+' · '+text(r.tipo)+' · '+time+' · '+text(r.id),
-        'Unidad: '+text(r.placa)+(r.carreta?' · Carreta: '+text(r.carreta):'')+(r.camaBaja?' · Cama baja: '+text(r.camaBaja):''),
-        'Cliente: '+text(r.cliente)+' · Conductor: '+text(r.conductor),
-        (r.maquinariaTransportada?'Maquinaria transportada: '+text(r.maquinariaTransportada):'Material: '+text(r.material))+' · Cantidad: '+number(r.cantidad)+' '+text(r.unidad),
-        'Responsable: '+text(r.responsable)
-      ];
-      doc.setFont('Inter','normal');doc.setFontSize(8);
-      const lines=detail.flatMap(t=>doc.splitTextToSize(t,250));
-      const imageMaxW=112,imageMaxH=65,blockHeight=lines.length*4.2+imageMaxH+17;
-      if(y+blockHeight>bottom){doc.addPage();y=43;heading('Evidencias fotográficas (continuación)')}
-      doc.setFillColor(245,248,250);doc.roundedRect(margin,y-3,269,blockHeight-5,2,2,'F');
-      doc.setFont('Inter','bold');doc.setFontSize(9);doc.setTextColor(...navy);
-      doc.text(lines[0],margin+4,y+3);
-      doc.setFont('Inter','normal');doc.setFontSize(8);
-      let lineY=y+7;
-      for(const line of lines.slice(1)){lineY+=4.2;doc.text(line,margin+4,lineY)}
-      const photoY=lineY+6;
+  // PRIMERO: ficha completa por movimiento con su fotografía, cuando exista.
+  heading('Registro detallado de movimientos');
+  if(!rows.length){
+    doc.setFont('Inter','normal');doc.setFontSize(10);doc.setTextColor(...navy);
+    doc.text('No se registraron movimientos para esta fecha.',margin,y+8);
+    y+=19;
+  }
+  for(let i=0;i<rows.length;i++){
+    await AppMotion.yieldPaint();
+    const r=rows[i];
+    const time=new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false});
+    const hasPhoto=!!r.fotos?.[0];
+    const rightW=hasPhoto?94:0;
+    const contentW=hasPhoto?161:255;
+    const data=[
+      ['Código',r.id],
+      ['Hora / movimiento',time+' · '+text(r.tipo)],
+      ['Cliente / empresa / destino',r.cliente],
+      ['Conductor / operador',r.conductor],
+      ['Placa / serie',r.placa],
+      ['Configuración de transporte',r.configTransporte||'Unidad sola'],
+      ...(r.carreta?[['Carreta / tolvón',r.carreta]]:[]),
+      ...(r.camaBaja?[['Cama baja',r.camaBaja]]:[]),
+      [r.maquinariaTransportada?'Maquinaria registrada':'Material registrado',r.maquinariaTransportada||r.material],
+      ['Cantidad',number(r.cantidad)+' '+text(r.unidad)],
+      ['Guía de remisión',r.guia||'No registrada'],
+      ['Autorización',r.autorizacion||'No registrada'],
+      ['Responsable',r.responsable||'No registrado'],
+      ['Observaciones / incidencias',r.observaciones||'Sin observaciones']
+    ];
+    doc.setFont('Inter','normal');doc.setFontSize(8);
+    const lines=data.flatMap(([label,val])=>doc.splitTextToSize(label+': '+text(val),contentW-8));
+    const lineHeight=4.15;
+    const contentHeight=lines.length*lineHeight+6;
+    const photoHeight=hasPhoto?73:0;
+    const cardH=Math.max(contentHeight,photoHeight)+15;
+    if(y+cardH>bottom){
+      doc.addPage();y=43;heading('Registro detallado de movimientos (continuación)');
+    }
+    const cardY=y;
+    doc.setFillColor(244,248,250);
+    doc.roundedRect(margin,cardY,269,cardH,2.5,2.5,'F');
+    doc.setFillColor(...navy);
+    doc.roundedRect(margin,cardY,269,9,2.5,2.5,'F');
+    doc.rect(margin,cardY+5,269,4,'F');
+    doc.setTextColor(255);doc.setFont('Inter','bold');doc.setFontSize(9);
+    doc.text('MOVIMIENTO '+String(i+1).padStart(3,'0')+'  ·  '+text(r.tipo).toUpperCase(),margin+4,cardY+6);
+    doc.setTextColor(...navy);doc.setFont('Inter','normal');doc.setFontSize(8);
+    let lineY=cardY+13;
+    for(const line of lines){doc.text(line,margin+4,lineY);lineY+=lineHeight;}
+    if(hasPhoto){
+      const x=margin+269-rightW+4,photoY=cardY+12,maxW=rightW-9,maxH=61;
+      doc.setDrawColor(216,225,230);doc.rect(x-1,photoY-1,maxW+2,maxH+2);
       try{
         const photo=r.fotos[0],info=doc.getImageProperties(photo);
-        const ratio=Math.min(imageMaxW/info.width,imageMaxH/info.height);
+        const ratio=Math.min(maxW/info.width,maxH/info.height);
         const w=info.width*ratio,h=info.height*ratio;
-        doc.addImage(photo,info.fileType,margin+4+(imageMaxW-w)/2,photoY,w,h,undefined,'FAST');
-      }catch{doc.setTextColor(120);doc.text('Fotografía no disponible',margin+5,photoY+15);doc.setTextColor(...navy)}
-      y+=blockHeight+4;
+        doc.addImage(photo,info.fileType,x+(maxW-w)/2,photoY+(maxH-h)/2,w,h,undefined,'FAST');
+      }catch{
+        doc.setTextColor(110);doc.text('Fotografía no disponible',x+2,photoY+16);doc.setTextColor(...navy);
+      }
+      doc.setFontSize(7);doc.text('Evidencia del movimiento '+(i+1),x,photoY+maxH+5);
     }
+    y+=cardH+6;
+  }
+
+  // DESPUÉS: resumen gerencial y consolidado de todos los registros del día.
+  if(rows.length){doc.addPage();y=43;}
+  heading('Resumen consolidado de la jornada');
+  await table(
+    ['Fecha','Movimientos','Entradas','Salidas','Autorizaciones pendientes','Con fotografía'],
+    [[dateLabel,rows.length,rows.filter(r=>r.tipo==='Entrada').length,
+      rows.filter(r=>r.tipo==='Salida').length,rows.filter(r=>r.autorizacion==='Pendiente').length,
+      rows.filter(r=>r.fotos?.length).length]]
+  );
+  if(rows.length){
+    heading('Consolidado por material / maquinaria');
+    const sums=new Map();
+    for(const r of rows){
+      const label=r.maquinariaTransportada?'Maquinaria: '+text(r.maquinariaTransportada):text(r.material);
+      const unit=text(r.unidad),type=text(r.tipo);
+      const key=JSON.stringify([label,unit,type]);
+      const item=sums.get(key)||{label,unit,type,count:0,total:0};
+      item.count++;item.total+=Number(r.cantidad)||0;sums.set(key,item);
+    }
+    await table(['Material o maquinaria','Unidad','Movimiento','Registros','Cantidad total'],
+      [...sums.values()].map(r=>[r.label,r.unit,r.type,r.count,number(r.total)]));
+    heading('Consolidado por cliente / destino');
+    const clients=new Map();
+    for(const r of rows){
+      const key=text(r.cliente)||'Sin cliente';
+      const item=clients.get(key)||{name:key,count:0,entries:0,exits:0};
+      item.count++;if(r.tipo==='Entrada')item.entries++;if(r.tipo==='Salida')item.exits++;
+      clients.set(key,item);
+    }
+    await table(['Cliente / empresa / destino','Movimientos','Entradas','Salidas'],
+      [...clients.values()].map(r=>[r.name,r.count,r.entries,r.exits]));
   }
   const pages=doc.getNumberOfPages();
   for(let p=1;p<=pages;p++){
