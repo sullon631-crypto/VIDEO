@@ -55,23 +55,41 @@ async function buildReportPDF(records, date) {
   await table(['Material','Unidad','Movimiento','Registros','Cantidad total'],sums.size?[...sums.values()].map(r=>[text(r.material),text(r.unidad),text(r.tipo),r.count,number(r.total)]):[['Sin materiales registrados','—','—','0','0']]);
   heading('Trazabilidad y observaciones');
   await table(['N.º','Código del movimiento','Responsable','Observaciones / incidencias'],rows.length?rows.map((r,i)=>[i+1,text(r.id),text(r.responsable),[r.configTransporte||'Unidad sola',r.carreta?'Carreta: '+r.carreta:'',r.camaBaja?'Cama baja: '+r.camaBaja:'',r.observaciones||''].filter(Boolean).join(' · ')]):[['—','Sin movimientos','—','—']],{0:{cellWidth:14},1:{cellWidth:66},2:{cellWidth:62},3:{cellWidth:127}});
-  const evidence=rows.filter(r=>r.fotos?.length);
-  if(evidence.length){doc.addPage();y=43;heading('Anexo · Evidencias fotográficas');
-    for(const r of evidence){
+  // Cada movimiento con fotografía tiene su propio bloque de evidencia identificado.
+  // No se crea una página adicional cuando el día no tiene fotografías.
+  const evidence=rows.map((r,i)=>({record:r,number:i+1})).filter(({record})=>Array.isArray(record.fotos)&&record.fotos.length>0);
+  if(evidence.length){
+    doc.addPage();y=43;heading('Evidencias fotográficas por movimiento');
+    for(const {record:r,number:i} of evidence){
       await AppMotion.yieldPaint();
-      const i=rows.indexOf(r)+1;
-      const caption=doc.splitTextToSize(`Movimiento ${i} | ${text(r.id)} | Placa: ${text(r.placa)} | ${text(r.cliente)}`,265);
-      const height=caption.length*4+65;
-      if(y+height>bottom){doc.addPage();y=43;heading('Anexo · Evidencias fotográficas (continuación)')}
-      doc.setFont('Inter','bold');doc.setFontSize(9);doc.setTextColor(...navy);doc.text(caption,margin,y);y+=caption.length*4+3;
-      for(let j=0;j<Math.min(3,r.fotos.length);j++){
-        const x=margin+j*91;
-        try{const info=doc.getImageProperties(r.fotos[j]);const ratio=Math.min(85/info.width,52/info.height);const w=info.width*ratio,h=info.height*ratio;doc.addImage(r.fotos[j],info.fileType,x+(85-w)/2,y,w,h,undefined,'FAST')}
-        catch{doc.setFontSize(9);doc.text('Imagen no disponible',x+5,y+20)}
-        doc.setFont('Inter','normal');doc.setFontSize(8);doc.text(`Evidencia ${j+1} · Movimiento ${i}`,x,y+57);
-      }y+=67;
+      const time=new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false});
+      const detail=[
+        'Movimiento '+i+' · '+text(r.tipo)+' · '+time+' · '+text(r.id),
+        'Unidad: '+text(r.placa)+(r.carreta?' · Carreta: '+text(r.carreta):'')+(r.camaBaja?' · Cama baja: '+text(r.camaBaja):''),
+        'Cliente: '+text(r.cliente)+' · Conductor: '+text(r.conductor),
+        (r.maquinariaTransportada?'Maquinaria transportada: '+text(r.maquinariaTransportada):'Material: '+text(r.material))+' · Cantidad: '+number(r.cantidad)+' '+text(r.unidad),
+        'Responsable: '+text(r.responsable)
+      ];
+      doc.setFont('Inter','normal');doc.setFontSize(8);
+      const lines=detail.flatMap(t=>doc.splitTextToSize(t,250));
+      const imageMaxW=112,imageMaxH=65,blockHeight=lines.length*4.2+imageMaxH+17;
+      if(y+blockHeight>bottom){doc.addPage();y=43;heading('Evidencias fotográficas (continuación)')}
+      doc.setFillColor(245,248,250);doc.roundedRect(margin,y-3,269,blockHeight-5,2,2,'F');
+      doc.setFont('Inter','bold');doc.setFontSize(9);doc.setTextColor(...navy);
+      doc.text(lines[0],margin+4,y+3);
+      doc.setFont('Inter','normal');doc.setFontSize(8);
+      let lineY=y+7;
+      for(const line of lines.slice(1)){lineY+=4.2;doc.text(line,margin+4,lineY)}
+      const photoY=lineY+6;
+      try{
+        const photo=r.fotos[0],info=doc.getImageProperties(photo);
+        const ratio=Math.min(imageMaxW/info.width,imageMaxH/info.height);
+        const w=info.width*ratio,h=info.height*ratio;
+        doc.addImage(photo,info.fileType,margin+4+(imageMaxW-w)/2,photoY,w,h,undefined,'FAST');
+      }catch{doc.setTextColor(120);doc.text('Fotografía no disponible',margin+5,photoY+15);doc.setTextColor(...navy)}
+      y+=blockHeight+4;
     }
-  }else{heading('Evidencias fotográficas');doc.setFont('Inter','normal');doc.setFontSize(9);doc.text('No se adjuntaron fotografías a los movimientos de esta fecha.',margin,y);y+=12}
+  }
   const pages=doc.getNumberOfPages();
   for(let p=1;p<=pages;p++){
     doc.setPage(p);doc.setFillColor(...navy);doc.rect(0,0,297,3,'F');
