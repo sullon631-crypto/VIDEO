@@ -1,0 +1,62 @@
+DIBISER · CONTROL DE ALMACÉN — EDICIÓN PROFESIONAL
+
+QUÉ INCLUYE
+Aplicación web instalable (PWA) para laptop, Android e iPhone/iPad.
+Formulario, historial, catálogos, cámara, respaldo JSON y exportación CSV.
+PDF directo A4 horizontal con fuente incorporada, tablas paginadas,
+autorizaciones, observaciones, totales por unidad y anexo fotográfico.
+La fecha del reporte se calcula en hora de Perú (America/Lima).
+
+1. PUBLICACIÓN
+Sube TODO el contenido de dibiser_almacen a un alojamiento HTTPS
+(por ejemplo GitHub Pages). Conserva las carpetas fonts, vendor e icons.
+No necesitas compilar ni instalar Node. No abras index.html con doble clic:
+las fuentes del PDF, la cámara y la instalación requieren un sitio servido.
+Esta entrega contiene los archivos; todavía no está publicada en internet.
+
+2. LAPTOP (WINDOWS / MAC)
+Abre la dirección HTTPS en Chrome o Edge. Usa el icono de instalación de
+la barra de direcciones o el menú del navegador > Instalar aplicación.
+Puedes ejecutarla en una ventana independiente y anclarla a la barra de tareas.
+
+3. CELULAR
+Android: Chrome > menú > Instalar aplicación / Añadir a pantalla principal.
+iPhone/iPad: Safari > Compartir > Añadir a pantalla de inicio.
+Concede permiso de cámara cuando quieras adjuntar fotografías.
+Si la cámara integrada falla, usa «Abrir cámara del celular».
+
+4. PRUEBA LOCAL EN LAPTOP (OPCIONAL, REQUIERE PYTHON 3)
+Abre una terminal en la carpeta dibiser_almacen:
+  python -m http.server 8000
+Abre http://localhost:8000 en esa laptop.
+Para usar e instalar desde el celular utiliza el sitio HTTPS; una dirección
+HTTP de red local no proporciona los permisos de cámara e instalación.
+
+5. DATOS Y RESPALDOS
+Los registros y fotografías se guardan en ese navegador y dispositivo.
+La laptop y el celular NO sincronizan automáticamente sus registros.
+La autorización es un estado registrado por el operador, no una firma digital
+ni un sistema de acceso con usuarios y contraseñas.
+Desde Catálogos > Respaldar datos guarda periódicamente el JSON fuera del equipo.
+Puedes importar ese archivo en otro dispositivo. Los códigos existentes se
+actualizan; revisa la fecha del respaldo antes de importarlo.
+Eliminar los datos del sitio elimina los registros de ese dispositivo.
+Para actualizar una instalación existente, respalda primero y publica en la
+misma dirección. Se mantiene el nombre de la base de datos original.
+Si cambias dominio/navegador debes trasladar tus datos con el respaldo JSON.
+
+6. SIN CONEXIÓN Y PDF
+Abre la app una vez con internet para almacenar todos los recursos.
+Después funciona sin conexión, incluidos fuentes y generación de PDF.
+Reporte diario > elige fecha > Descargar reporte PDF.
+En algunos móviles el navegador permite abrir o compartir el archivo antes
+ de guardarlo. Revisa Descargas/Archivos.
+Los totales se separan por movimiento, material y unidad; no se mezclan TN y m³.
+El estado Pendiente solicita confirmación tanto en entradas como en salidas.
+
+7. VALIDACIÓN DE ESTA ENTREGA
+Probada en Chromium: guardado, historial, descarga de PDF, reporte vacío,
+65 movimientos, textos largos, fotos de prueba y funcionamiento sin conexión.
+Diseño comprobado a 390, 768 y 1366 píxeles. Cámara probada con dispositivo
+simulado. La instalación y la cámara en equipos físicos Android/iOS requieren
+comprobación en esos dispositivos después de publicar.
