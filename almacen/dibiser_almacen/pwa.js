@@ -15,5 +15,5 @@
  document.getElementById('installInfoBtn').addEventListener('click',()=>alert(!secure?'Primero aloja todos los archivos en un sitio HTTPS, por ejemplo GitHub Pages. Abrir el HTML desde archivos locales no instala la PWA.':ios?'iPhone/iPad: abre el sitio en Safari > botón Compartir > Añadir a pantalla de inicio > Añadir.': 'Laptop: abre en Chrome o Edge y usa el icono Instalar de la barra de direcciones. Android: Chrome > menú ⋮ > Instalar aplicación. También puedes usar el botón Instalar si aparece.'));
  document.getElementById('installDismiss').addEventListener('click',()=>{box.hidden=true;});
  window.addEventListener('appinstalled',()=>{box.hidden=true;deferred=null;});
- if('serviceWorker' in navigator && secure){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(err=>console.warn('No se pudo activar modo sin conexión:',err)));}
+ if('serviceWorker' in navigator && secure){window.addEventListener('load',async()=>{try{const reg=await navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'});await reg.update();}catch(err){console.warn('No se pudo actualizar modo sin conexión:',err)}});}
 })();
