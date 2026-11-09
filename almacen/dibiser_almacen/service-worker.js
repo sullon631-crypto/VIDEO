@@ -1,8 +1,5 @@
-const CACHE='dibiser-almacen-v8-logo-proporcional';
+const CACHE='dibiser-almacen-v9-red-primero';
 const ASSETS=['./','./index.html','./app.js','./pwa.js','./professional.css','./interface.js','./motion.js','./motion.css','./report-pdf.js','./vendor/jspdf.umd.min.js','./vendor/jspdf.plugin.autotable.min.js','./fonts/inter-400.ttf','./fonts/inter-700.ttf','./fonts/inter-400.woff2','./fonts/inter-600.woff2','./fonts/inter-700.woff2','./manifest.webmanifest','./logo.jpeg','./catalogos.json','./icons/icon-180.png','./icons/icon-192.png','./icons/icon-512.png'];
-self.addEventListener('install', event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));});
-self.addEventListener('activate', event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('dibiser-almacen-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
-self.addEventListener('fetch',event=>{
- if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;
- event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(c=>c.put(event.request,copy));}return response;})));
-});
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(async cache=>{await Promise.all(ASSETS.map(async asset=>{try{await cache.add(new Request(asset,{cache:'reload'}))}catch(err){console.warn('DIBISER: recurso no precargado',asset)}}));}).then(()=>self.skipWaiting()))});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(names=>Promise.all(names.filter(n=>n.startsWith('dibiser-almacen-')&&n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim()))});
+self.addEventListener('fetch',e=>{const req=e.request;if(req.method!=='GET'||new URL(req.url).origin!==self.location.origin)return;e.respondWith((async()=>{const cache=await caches.open(CACHE);try{const res=await fetch(req,{cache:'no-store'});if(res.ok)await cache.put(req,res.clone());return res;}catch(err){const saved=await cache.match(req);if(saved)return saved;throw err;}})())});
