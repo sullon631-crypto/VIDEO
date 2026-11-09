@@ -17,24 +17,26 @@ async function buildReportPDF(records, date) {
   try {const im=new Image();im.src='logo.jpeg';await im.decode();logo=im;}catch{}
   let y=43;
   function heading(label){if(y>bottom-20){doc.addPage();y=43}doc.setFont('Inter','bold');doc.setFontSize(12);doc.setTextColor(...navy);doc.text(label,margin,y);y+=5}
-  function table(head,body,widths){
+  async function table(head,body,widths){
+    await AppMotion.yieldPaint();
     doc.autoTable({startY:y,head:[head],body,margin:{top:43,bottom:20,left:margin,right:margin},theme:'striped',styles:{font:'Inter',fontSize:8,cellPadding:2.5,overflow:'linebreak',textColor:navy,lineColor:[220,227,232],lineWidth:.1},headStyles:{fillColor:navy,textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[245,248,250]},columnStyles:widths||{},rowPageBreak:'avoid'});
     y=doc.lastAutoTable.finalY+10;
   }
   doc.setProperties({title:`DIBISER - Reporte de movimientos ${date}`,subject:'Control diario de almacén',author:'DIBISER E.I.R.L.'});
   heading('Resumen de operación');
-  table(['Fecha de operación','Movimientos','Entradas','Salidas','Pendientes de autorización'],[[dateLabel,rows.length,rows.filter(r=>r.tipo==='Entrada').length,rows.filter(r=>r.tipo==='Salida').length,rows.filter(r=>r.autorizacion==='Pendiente').length]]);
+  await table(['Fecha de operación','Movimientos','Entradas','Salidas','Pendientes de autorización'],[[dateLabel,rows.length,rows.filter(r=>r.tipo==='Entrada').length,rows.filter(r=>r.tipo==='Salida').length,rows.filter(r=>r.autorizacion==='Pendiente').length]]);
   heading('Detalle de movimientos');
-  table(['N.º / Hora','Placa / Serie','Tipo','Cliente / Destino','Conductor','Material','Cantidad','Guía','Autorización'],rows.length?rows.map((r,i)=>[`${i+1}\n${new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false})}`,text(r.placa),text(r.tipo),text(r.cliente),text(r.conductor),text(r.material),`${number(r.cantidad)} ${text(r.unidad)}`,text(r.guia)||'No registrada',text(r.autorizacion)||'No registrada']):[['—','Sin movimientos para esta fecha','','','','','','','']],{0:{cellWidth:17},1:{cellWidth:26},2:{cellWidth:18},3:{cellWidth:47},4:{cellWidth:33},5:{cellWidth:51},6:{cellWidth:22},7:{cellWidth:25},8:{cellWidth:30}});
+  await table(['N.º / Hora','Placa / Serie','Tipo','Cliente / Destino','Conductor','Material','Cantidad','Guía','Autorización'],rows.length?rows.map((r,i)=>[`${i+1}\n${new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false})}`,text(r.placa),text(r.tipo),text(r.cliente),text(r.conductor),text(r.material),`${number(r.cantidad)} ${text(r.unidad)}`,text(r.guia)||'No registrada',text(r.autorizacion)||'No registrada']):[['—','Sin movimientos para esta fecha','','','','','','','']],{0:{cellWidth:17},1:{cellWidth:26},2:{cellWidth:18},3:{cellWidth:47},4:{cellWidth:33},5:{cellWidth:51},6:{cellWidth:22},7:{cellWidth:25},8:{cellWidth:30}});
   heading('Consolidado por material, unidad y movimiento');
   const sums=new Map();
   for(const r of rows){const key=JSON.stringify([r.material,r.unidad,r.tipo]);const val=sums.get(key)||{material:r.material,unidad:r.unidad,tipo:r.tipo,total:0,count:0};val.total+=Number(r.cantidad);val.count++;sums.set(key,val)}
-  table(['Material','Unidad','Movimiento','Registros','Cantidad total'],sums.size?[...sums.values()].map(r=>[text(r.material),text(r.unidad),text(r.tipo),r.count,number(r.total)]):[['Sin materiales registrados','—','—','0','0']]);
+  await table(['Material','Unidad','Movimiento','Registros','Cantidad total'],sums.size?[...sums.values()].map(r=>[text(r.material),text(r.unidad),text(r.tipo),r.count,number(r.total)]):[['Sin materiales registrados','—','—','0','0']]);
   heading('Trazabilidad y observaciones');
-  table(['N.º','Código del movimiento','Responsable','Observaciones / incidencias'],rows.length?rows.map((r,i)=>[i+1,text(r.id),text(r.responsable),text(r.observaciones)||'Sin observaciones registradas']):[['—','Sin movimientos','—','—']],{0:{cellWidth:14},1:{cellWidth:66},2:{cellWidth:62},3:{cellWidth:127}});
+  await table(['N.º','Código del movimiento','Responsable','Observaciones / incidencias'],rows.length?rows.map((r,i)=>[i+1,text(r.id),text(r.responsable),text(r.observaciones)||'Sin observaciones registradas']):[['—','Sin movimientos','—','—']],{0:{cellWidth:14},1:{cellWidth:66},2:{cellWidth:62},3:{cellWidth:127}});
   const evidence=rows.filter(r=>r.fotos?.length);
   if(evidence.length){doc.addPage();y=43;heading('Anexo · Evidencias fotográficas');
     for(const r of evidence){
+      await AppMotion.yieldPaint();
       const i=rows.indexOf(r)+1;
       const caption=doc.splitTextToSize(`Movimiento ${i} | ${text(r.id)} | Placa: ${text(r.placa)} | ${text(r.cliente)}`,265);
       const height=caption.length*4+65;
@@ -63,8 +65,8 @@ async function buildReportPDF(records, date) {
   return doc;
 }
 $('pdf').onclick=async()=>{
- const button=$('pdf'), status=$('pdfStatus');button.disabled=true;button.textContent='Preparando PDF…';status.textContent='Organizando movimientos y evidencias.';
- try{const date=$('reportDate').value;if(!date)throw Error('Selecciona la fecha del reporte.');const rows=(await all()).filter(r=>dateKey(r.iso)===date);const pdf=await buildReportPDF(rows,date);pdf.save(`DIBISER_Reporte_${date}.pdf`);status.textContent='PDF generado. Revisa las descargas de tu dispositivo.'}
+ const button=$('pdf'), status=$('pdfStatus');if(button.disabled)return;button.disabled=true;const finish=AppMotion.busy(button);button.textContent='Preparando PDF…';status.textContent='Organizando movimientos y evidencias.';
+ try{await AppMotion.yieldPaint();const date=$('reportDate').value;if(!date)throw Error('Selecciona la fecha del reporte.');const rows=(await all()).filter(r=>dateKey(r.iso)===date);const pdf=await buildReportPDF(rows,date);pdf.save(`DIBISER_Reporte_${date}.pdf`);status.textContent='PDF generado. Revisa las descargas de tu dispositivo.'}
  catch(e){status.textContent='No se pudo generar el PDF. '+e.message}
- finally{button.disabled=false;button.textContent='Descargar reporte PDF'}
+ finally{finish();button.disabled=false;button.textContent='Descargar reporte PDF'}
 };

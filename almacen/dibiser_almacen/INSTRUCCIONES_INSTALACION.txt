@@ -60,3 +60,13 @@ Probada en Chromium: guardado, historial, descarga de PDF, reporte vacío,
 Diseño comprobado a 390, 768 y 1366 píxeles. Cámara probada con dispositivo
 simulado. La instalación y la cámara en equipos físicos Android/iOS requieren
 comprobación en esos dispositivos después de publicar.
+
+8. ACTUALIZACIÓN MOTION DESIGN
+Esta edición incorpora transiciones de vistas, menús y cámara, entradas
+progresivas, indicadores de carga y un efecto de profundidad en el logo.
+Respeta la opción «Reducir movimiento» de tu dispositivo.
+Cada movimiento nuevo admite una sola foto. Para repetirla, quita la anterior.
+Las fotografías antiguas no se eliminan ni se recortan del historial.
+Después de publicar una actualización, abre la app con internet y vuelve a
+cerrarla y abrirla para que el nuevo modo sin conexión termine de instalarse.
+No borres los datos del sitio: allí están guardados tus registros.

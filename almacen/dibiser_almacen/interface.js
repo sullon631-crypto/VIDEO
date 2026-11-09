@@ -6,8 +6,17 @@ for(const[id,label]of groups){const field=$(id).closest('.field');const title=do
 function navState(){document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-current',b.classList.contains('active')?'page':'false'))}
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',navState));navState();
 document.querySelectorAll('.scroll').forEach(el=>{el.tabIndex=0;el.setAttribute('role','region');el.setAttribute('aria-label','Tabla de registros, desplazamiento horizontal')});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.menu').forEach(el=>el.classList.add('hidden'));if(!$('cameraModal').classList.contains('hidden')){closeCamera();$('openCamera').focus()}}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('cameraModal').classList.contains('hidden'))closeCamera()});
 // Evita que el foco abandone la cámara mientras está abierta.
 $('cameraModal').addEventListener('keydown',e=>{if(e.key!=='Tab')return;const items=[...$('cameraModal').querySelectorAll('button:not(:disabled)')],first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault()}else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault()}});
-$('openCamera').addEventListener('click',()=>$('closeCamera').focus());
-$('closeCamera').addEventListener('click',()=>$('openCamera').focus());
+
+AppMotion.init();
+renderPhotoPreview();
+
+// Export and restore show real pending state, including on slower phones.
+for(const id of ['csv','backup']){
+ const button=$(id),action=button.onclick;
+ button.onclick=async e=>{if(button.disabled)return;button.disabled=true;try{await AppMotion.task(button,()=>action(e))}catch(err){AppMotion.error(err)}finally{button.disabled=false}};
+}
+const restoreAction=$('restoreFile').onchange;
+$('restoreFile').onchange=e=>AppMotion.task($('restore'),()=>restoreAction(e)).catch(AppMotion.error);

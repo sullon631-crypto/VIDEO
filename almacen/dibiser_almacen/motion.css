@@ -1,0 +1,25 @@
+/* Shared timing tokens. Operational controls stay available during movement. */
+:root{--ease-out:cubic-bezier(.23,1,.32,1);--ease-in-out:cubic-bezier(.77,0,.175,1);--motion-press:160ms;--motion-control:200ms;--motion-panel:240ms;--motion-modal:280ms;--motion-intro:400ms}
+.page-stage{position:relative;isolation:isolate}.page-stage>section{position:relative}.page-stage>section.motion-leaving{position:absolute;inset:0 0 auto;pointer-events:none;z-index:-1}
+button{transition:transform var(--motion-press) var(--ease-out),background-color var(--motion-control) ease,color var(--motion-control) ease,opacity var(--motion-control) ease}
+button:active:not(:disabled){transform:scale(.97)}
+input,select,textarea{transition:border-color var(--motion-control) ease,background-color var(--motion-control) ease}
+input:focus,select:focus,textarea:focus{border-color:#075f73}
+.menu{transform-origin:top left}.menu button{transition:background-color var(--motion-control) ease,color var(--motion-control) ease}.menu button:active{transform:none}
+.camera-open{overflow:hidden}.camera-modal{overscroll-behavior:contain}.camera-panel{transform-origin:center}
+.brand-depth{backface-visibility:hidden;transition:transform 400ms var(--ease-out)}
+.feedback-slot{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(560px,calc(100% - 24px));z-index:1000;pointer-events:none}.app-feedback{margin:0;padding:12px 16px;border:1px solid #a9cfc5;border-radius:9px;background:#eef8f3;color:#16513c;font-size:14px;box-shadow:0 5px 16px #112e4612;overflow-wrap:anywhere}
+.app-feedback:empty{display:none}
+#msg:not(:empty){padding:10px 12px;background:#eef8f3;border-radius:8px}
+#pdfStatus{min-height:1.5em}
+.is-busy{position:relative}
+button.is-busy::before,#cameraStatus.is-busy::before,#photoCount.is-busy::before{content:'';display:inline-block;width:14px;height:14px;margin-right:8px;vertical-align:-2px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:busy-spin .7s linear infinite}
+.page-stage>section.is-busy::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:#0c6277;transform-origin:left;animation:busy-bar 1.1s var(--ease-in-out) infinite;z-index:2}
+@keyframes busy-spin{to{transform:rotate(360deg)}}
+@keyframes busy-bar{0%{transform:scaleX(.08);opacity:.45}65%{transform:scaleX(.7);opacity:1}100%{transform:scaleX(1);opacity:0}}
+@media(hover:hover) and (pointer:fine){.photo-evidence img{transition:transform var(--motion-panel) var(--ease-out)}.photo-evidence:hover img{transform:scale(1.02)}.view:hover{transform:translateY(-1px)}}
+.keyboard-motion button:active{transform:none}.keyboard-motion .brand-depth{transform:none!important}
+@media(prefers-reduced-motion:reduce){button,input,select,textarea,.brand-depth,.photo-evidence img{transition:none!important;transform:none!important}.is-busy::before{animation:none!important}.page-stage>section.is-busy::before{opacity:.7;transform:none}}
+@media print{.motion-leaving{display:none!important}.page-stage{min-height:0!important}.app-feedback,.is-busy::before{display:none!important}*{animation:none!important;transition:none!important}.page-stage>section{transform:none!important;opacity:1!important}}
+
+@media(max-width:650px){.install-box>.grow{flex-basis:100%}.install-box .install-actions{width:100%;justify-content:flex-end}}
