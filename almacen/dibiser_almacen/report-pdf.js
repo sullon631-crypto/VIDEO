@@ -24,7 +24,7 @@ async function buildReportPDF(records, date) {
   }
   doc.setProperties({title:`DIBISER - Reporte de movimientos ${date}`,subject:'Control diario de almacén',author:'DIBISER E.I.R.L.'});
   heading('Resumen de operación');
-  await table(['Fecha de operación','Movimientos','Entradas','Salidas','Pendientes de autorización'],[[dateLabel,rows.length,rows.filter(r=>r.tipo==='Entrada').length,rows.filter(r=>r.tipo==='Salida').length,rows.filter(r=>r.autorizacion==='Pendiente').length]]);
+  await table(['Fecha de operación','Movimientos','Entradas','Salidas','Movilizaciones','Pendientes de autorización'],[[dateLabel,rows.length,rows.filter(r=>r.tipo==='Entrada').length,rows.filter(r=>r.tipo==='Salida').length,rows.filter(r=>r.tipo==='Movilización').length,rows.filter(r=>r.autorizacion==='Pendiente').length]]);
   heading('Detalle de movimientos');
   await table(['N.º / Hora','Placa / Serie','Tipo','Cliente / Destino','Conductor','Material','Cantidad','Guía','Autorización'],rows.length?rows.map((r,i)=>[`${i+1}\n${new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false})}`,text(r.placa)+(r.carreta?'\nCarreta: '+text(r.carreta):'')+(r.camaBaja?'\nCama baja: '+text(r.camaBaja):''),text(r.tipo),text(r.cliente),text(r.conductor),text(r.material),`${number(r.cantidad)} ${text(r.unidad)}`,text(r.guia)||'No registrada',text(r.autorizacion)||'No registrada']):[['—','Sin movimientos para esta fecha','','','','','','','']],{0:{cellWidth:17},1:{cellWidth:26},2:{cellWidth:18},3:{cellWidth:47},4:{cellWidth:33},5:{cellWidth:51},6:{cellWidth:22},7:{cellWidth:25},8:{cellWidth:30}});
   heading('Consolidado por material, unidad y movimiento');
