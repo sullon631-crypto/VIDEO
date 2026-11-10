@@ -179,73 +179,99 @@ async function buildReportPDF(records, date) {
     doc.text('No se registraron movimientos para esta fecha.',margin,y);
   }
 
-  // DESPUÉS: fichas con letra legible y fotografía ampliada.
-  if(rows.length){doc.addPage();y=41;pageHeading('Movimientos detallados con evidencia fotográfica')}
+  // SEGUNDA SECCIÓN: exactamente UN MOVIMIENTO POR HOJA.
+  // Se mantiene la imagen completa sin estirar ni recortar y se adapta
+  // únicamente el tamaño de fuente si un registro contiene textos extensos.
   for(let i=0;i<rows.length;i++){
     await AppMotion.yieldPaint();
-    const r=rows[i];
+    doc.addPage();
+    const r=rows[i],service=r.configTransporte==='Trabajo / servicio';
     const time=new Date(r.iso).toLocaleTimeString('es-PE',{
       timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false
     });
-    const service=r.configTransporte==='Trabajo / servicio';
     const data=[
       ['Código',r.id],
-      ['Hora',time],
+      ['Hora del movimiento',time],
       ...(!service?[['Cliente / destino',r.cliente]]:[]),
-      ['Conductor',r.conductor],
+      ['Conductor / operador',r.conductor],
       ['Placa / serie',r.placa],
-      ['Transporte',r.configTransporte||'Unidad sola'],
+      ['Configuración de transporte',r.configTransporte||'Unidad sola'],
       ...(r.carreta?[['Carreta / tolvón',r.carreta]]:[]),
       ...(r.camaBaja?[['Cama baja',r.camaBaja]]:[]),
-      ...(r.trabajo?[['Trabajo / motivo',r.trabajo]]:
-       [[r.maquinariaTransportada?'Maquinaria':'Material',r.maquinariaTransportada||r.material||'No registrado']]),
+      ...(r.trabajo?[['Trabajo / motivo de salida',r.trabajo]]:
+        [[r.maquinariaTransportada?'Maquinaria transportada':'Material registrado',
+          r.maquinariaTransportada||r.material||'No registrado']]),
       ...(!service?[['Cantidad registrada',number(r.cantidad)+' '+text(r.unidad)]]:[]),
       ['Guía / correlativo interno',r.guia||'No registrado'],
       ['Autorización',r.autorizacion||'No registrada'],
       ['Responsable',r.responsable||'No registrado'],
-      ['Observaciones',r.observaciones||'Sin observaciones']
+      ['Observaciones / incidencias',r.observaciones||'Sin observaciones']
     ];
-    const hasPhoto=!!(r.fotos&&r.fotos[0]),panelW=inner;
-    const rightW=hasPhoto?117:0,detailW=hasPhoto?151:panelW-10;
-    regular(9.7);
-    const fieldLines=[];
-    for(const [name,value] of data){
-      const content=name+': '+text(value);
-      for(const line of doc.splitTextToSize(content,detailW-6))fieldLines.push(line);
-    }
-    const lineHeight=4.42,cardH=Math.max(70,14+fieldLines.length*lineHeight);
-    if(y+cardH>bottom){
-      doc.addPage();y=41;pageHeading('Movimientos detallados (continuación)');
-    }
-    const cardY=y;
-    doc.setFillColor(245,249,251);
-    doc.roundedRect(margin,cardY,panelW,cardH,2.5,2.5,'F');
+    y=41;
+    bold(13.2);
+    doc.text('REGISTRO DETALLADO DE MOVIMIENTO',margin,y);
+    const cardY=49.5,cardH=140.5,cardW=inner;
+    const barH=12,photoColumnX=154,photoColumnW=124;
+    doc.setFillColor(244,248,250);
+    doc.roundedRect(margin,cardY,cardW,cardH,3,3,'F');
     doc.setFillColor(...navy);
-    doc.roundedRect(margin,cardY,panelW,8.7,2,2,'F');
-    doc.rect(margin,cardY+5,panelW,3.7,'F');
-    bold(10.4,[255,255,255]);
-    doc.text('MOVIMIENTO '+String(i+1).padStart(3,'0')+'  ·  '+upper(r.tipo),margin+4,cardY+6.05);
-    regular(9.7);
-    let lineY=cardY+13.2;
-    for(const line of fieldLines){doc.text(line,margin+4,lineY);lineY+=lineHeight;}
-    if(hasPhoto){
-      const photoX=margin+panelW-rightW+3,photoY=cardY+10.4;
-      const maxW=rightW-8,maxH=Math.min(55,cardH-13);
-      doc.setDrawColor(210,221,230);
-      doc.rect(photoX-1,photoY-1,maxW+2,maxH+2);
+    doc.roundedRect(margin,cardY,cardW,barH,3,3,'F');
+    doc.rect(margin,cardY+barH-4,cardW,4,'F');
+    bold(13.5,[255,255,255]);
+    doc.text('MOVIMIENTO '+String(i+1).padStart(3,'0')+'  ·  '+upper(r.tipo),margin+5,cardY+8.2);
+    bold(14.2,[255,255,255]);
+    const plate=upper(r.placa||'');
+    if(plate&&doc.getTextWidth(plate)<102)doc.text(plate,W-margin-5,cardY+8.2,{align:'right'});
+
+    // El cuerpo usa hasta 14.6 pt frente a los 9.7 pt de la versión anterior.
+    const leftX=margin+5,bodyTop=cardY+19.2,textWidth=photoColumnX-leftX-5;
+    const bodyMaxH=cardH-25;
+    const sizes=[14.6,14,13.4,12.8,12.2,11.6,11,10.4,9.8];
+    let fontSize=sizes[sizes.length-1],lines=[],lineHeight=5;
+    for(const candidate of sizes){
+      regular(candidate);
+      const candidateLines=[];
+      for(const [label,val] of data){
+        const sentence=label+': '+text(val);
+        candidateLines.push(...doc.splitTextToSize(sentence,textWidth));
+      }
+      const candidateHeight=candidate*0.45;
+      fontSize=candidate;lines=candidateLines;lineHeight=candidateHeight;
+      if(lines.length*lineHeight<=bodyMaxH)break;
+    }
+    regular(fontSize);
+    let lineY=bodyTop;
+    for(const line of lines){
+      if(lineY>cardY+cardH-6)break;
+      doc.text(line,leftX,lineY);
+      lineY+=lineHeight;
+    }
+
+    // Evidencia fotográfica más de dos veces más alta que en el reporte anterior.
+    const photoX=photoColumnX,photoY=cardY+16;
+    const photoW=photoColumnW,photoH=112;
+    doc.setFillColor(232,239,243);
+    doc.roundedRect(photoX-1,photoY-1,photoW+2,photoH+2,2,2,'F');
+    doc.setDrawColor(207,221,230);
+    doc.roundedRect(photoX-1,photoY-1,photoW+2,photoH+2,2,2,'S');
+    if(r.fotos?.[0]){
       try{
         const photo=r.fotos[0],info=doc.getImageProperties(photo);
-        const fit=Math.min(maxW/info.width,maxH/info.height);
-        const pw=info.width*fit,ph=info.height*fit;
-        doc.addImage(photo,info.fileType,photoX+(maxW-pw)/2,photoY+(maxH-ph)/2,pw,ph,undefined,'FAST');
+        const factor=Math.min(photoW/info.width,photoH/info.height);
+        const imageW=info.width*factor,imageH=info.height*factor;
+        doc.addImage(photo,info.fileType,
+          photoX+(photoW-imageW)/2,photoY+(photoH-imageH)/2,
+          imageW,imageH,undefined,'FAST');
       }catch(err){
-        regular(9,[95,105,114]);
-        doc.text('Fotografía no disponible',photoX+2,photoY+18);
+        regular(12,[86,103,117]);
+        doc.text('Fotografía no disponible',photoX+5,photoY+photoH/2);
       }
-      regular(7.6,[65,83,95]);
-      doc.text('Evidencia fotográfica',photoX,photoY+maxH+3.6);
+    }else{
+      regular(12,[100,116,128]);
+      doc.text('Sin fotografía registrada',photoX+photoW/2,photoY+photoH/2,{align:'center'});
     }
-    y+=cardH+4.5;
+    regular(9.8,[68,86,101]);
+    doc.text('EVIDENCIA FOTOGRÁFICA',photoX+photoW/2,photoY+photoH+7,{align:'center'});
   }
 
   // ÚLTIMA SECCIÓN: todos los consolidados, agrupados por nombres equivalentes.
