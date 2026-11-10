@@ -498,5 +498,21 @@
     "TDA-998",
     "AWW-974",
     "BMR-998"
+  ],
+  "trabajos": [
+    "Auxilio mecánico",
+    "Compra de repuestos",
+    "Revisión de averías",
+    "Mantenimiento preventivo",
+    "Mantenimiento correctivo",
+    "Inspección de maquinaria",
+    "Traslado de maquinaria",
+    "Traslado a taller",
+    "Abastecimiento de combustible",
+    "Servicio técnico",
+    "Recojo de repuestos",
+    "Entrega de repuestos",
+    "Trabajo en obra",
+    "Otros trabajos"
   ]
 }
