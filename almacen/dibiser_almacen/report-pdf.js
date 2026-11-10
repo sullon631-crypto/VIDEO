@@ -73,6 +73,7 @@ async function buildReportPDF(records, date) {
       ['Guía de remisión',r.guia||'No registrada'],
       ['Autorización',r.autorizacion||'No registrada'],
       ['Responsable',r.responsable||'No registrado'],
+      ...(r.trabajo?[['Trabajo / motivo de salida',r.trabajo]]:[]),
       ['Observaciones / incidencias',r.observaciones||'Sin observaciones']
     ];
     doc.setFont('Inter','normal');doc.setFontSize(8);
