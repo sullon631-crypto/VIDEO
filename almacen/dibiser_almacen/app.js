@@ -189,11 +189,69 @@ async function renderHistory(){
   if((f!=='Todos'&&r.tipo!==f)|| (from&&dateKey(r.iso)<from)||(to&&dateKey(r.iso)>to))return false;
   return [r.id,r.guia,r.placa,r.carreta,r.camaBaja,r.maquinariaTransportada,r.trabajo,r.cliente,r.conductor,r.material].some(v=>String(v??'').toLocaleLowerCase('es').includes(q));
  });
- $('historyRows').innerHTML=rr.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(new Date(r.iso).toLocaleString('es-PE'))}</td><td>${esc(r.tipo)}</td><td>${esc(r.placa)}</td><td>${esc(r.cliente)}</td><td>${esc(r.conductor)}</td><td>${esc(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:r.material))}</td><td>${r.configTransporte==='Trabajo / servicio'?'—':esc(r.cantidad)+' '+esc(r.unidad)}</td><td><button class="view" data-id="${esc(r.id)}">Ver</button></td></tr>`).join('')||'<tr><td colspan="9">No se encontraron movimientos con los filtros actuales.</td></tr>';
+ $('historyRows').innerHTML=rr.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(new Date(r.iso).toLocaleString('es-PE'))}</td><td>${esc(r.tipo)}</td><td>${esc(r.placa)}</td><td>${esc(r.cliente)}</td><td>${esc(r.conductor)}</td><td>${esc(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:r.material))}</td><td>${r.configTransporte==='Trabajo / servicio'?'—':esc(r.cantidad)+' '+esc(r.unidad)}</td><td><button class="view" data-id="${esc(r.id)}">Ver</button> <button class="edit" data-id="${esc(r.id)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="9">No se encontraron movimientos con los filtros actuales.</td></tr>';
  document.querySelectorAll('.view').forEach(b=>b.onclick=()=>detail(rr.find(r=>r.id===b.dataset.id)));
+ document.querySelectorAll('.edit').forEach(b=>b.onclick=()=>abrirEdicion(rr.find(r=>r.id===b.dataset.id)));
  $('historySyncStatus').textContent='Historial de este celular: '+rr.length+' de '+rrAll.length+' movimientos.';
 }
 function detail(r){$('detail').innerHTML=`<div class="card" style="margin-top:16px"><h3>Detalle ${esc(r.id)}</h3><p><b>Fecha:</b> ${esc(new Date(r.iso).toLocaleString('es-PE'))} · <b>Movimiento:</b> ${esc(r.tipo)} · <b>Placa:</b> ${esc(r.placa)}</p><p><b>Cliente:</b> ${esc(r.cliente)} · <b>Conductor:</b> ${esc(r.conductor)}</p><p><b>Configuración:</b> ${esc(r.configTransporte||'Unidad sola')} · <b>Carreta:</b> ${esc(r.carreta||'No aplica')} · <b>Cama baja:</b> ${esc(r.camaBaja||'No aplica')}</p><p><b>${r.maquinariaTransportada?'Maquinaria transportada':'Material'}:</b> ${esc(r.maquinariaTransportada||r.material)} · <b>Cantidad:</b> ${r.configTransporte==='Trabajo / servicio'?'No aplica':esc(r.cantidad)+' '+esc(r.unidad)} · <b>Guía:</b> ${esc(r.guia)}</p><p><b>Trabajo / motivo de salida:</b> ${esc(r.trabajo||'No especificado')}</p><p><b>Autorización:</b> ${esc(r.autorizacion)} · <b>Responsable:</b> ${esc(r.responsable)}</p><p><b>Observaciones:</b> ${esc(r.observaciones)}</p><div class="photo">${(r.fotos||[]).map(s=>`<a href="${s}" target="_blank"><img alt="Foto" src="${s}"></a>`).join('')}</div></div>`;}
+
+let editingRecord=null;
+const editMap=["tipo","configTransporte","placa","conductor","cliente","carreta","camaBaja","maquinariaTransportada","material","trabajo","cantidad","unidad","autorizacion","responsable","observaciones"];
+function abrirEdicion(row){
+ if(!row)return;
+ editingRecord={...row};
+ for(const key of editMap){
+  const el=$('edit_'+key),value=row[key]??'';
+  if(el.tagName==='SELECT'&&value&&![...el.options].some(x=>x.value===String(value)))el.add(new Option(String(value),String(value)));
+  el.value=value;
+ }
+ $('editFoto').value='';
+ $('editInfo').textContent='Movimiento '+row.id+' · Guía '+(row.guia||'sin guía')+'. Se conservan el código, fecha y número de guía.';
+ $('editPanel').classList.remove('hidden');
+ $('editPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('cancelarEdicion').onclick=()=>{editingRecord=null;$('editPanel').classList.add('hidden')};
+$('editForm').onsubmit=async event=>{
+ event.preventDefault();if(!editingRecord)return;
+ const button=$('editForm').querySelector('[type="submit"]');if(button.disabled)return;
+ const updated={...editingRecord};
+ for(const key of editMap)updated[key]=String($('edit_'+key).value??'').trim();
+ if(!updated.placa||!updated.conductor)return alert('Placa y conductor son obligatorios.');
+ if(updated.configTransporte==='Trabajo / servicio'){
+  if(updated.tipo!=='Salida'||!updated.trabajo)return alert('Trabajo / servicio necesita un motivo y solo admite salida.');
+  Object.assign(updated,{cliente:'',material:'',carreta:'',camaBaja:'',maquinariaTransportada:'',cantidad:null,unidad:''});
+ }else if(updated.configTransporte==='Con cama baja'){
+  if(!updated.camaBaja||!updated.maquinariaTransportada)return alert('Completa cama baja y maquinaria.');
+  updated.material='';updated.trabajo='';updated.carreta='';
+  updated.cantidad=Number(updated.cantidad);
+  if(!(updated.cantidad>0))return alert('Cantidad inválida.');
+ }else{
+  if(!updated.cliente||!updated.material)return alert('Completa cliente y material.');
+  if(updated.configTransporte==='Con carreta'&&!updated.carreta)return alert('Completa carreta o tolvón.');
+  updated.cantidad=Number(updated.cantidad);
+  if(!(updated.cantidad>0)||!updated.unidad)return alert('Cantidad o unidad inválida.');
+  if(updated.configTransporte!=='Con carreta')updated.carreta='';
+  updated.camaBaja='';updated.maquinariaTransportada='';updated.trabajo='';
+ }
+ const photo=$('editFoto').files[0];
+ if(photo){try{updated.fotos=[await compress(photo)]}catch(err){return alert('Foto inválida: '+err.message)}}
+ if(!confirm('¿Guardar las correcciones de este registro?'))return;
+ button.disabled=true;
+ try{
+  const current=(await allLocal()).find(x=>x.id===editingRecord.id);
+  if(!current)throw Error('No se encontró el registro en este celular.');
+  if(String(current.editedAt||'')!==String(editingRecord.editedAt||''))throw Error('El registro fue modificado: vuelve a abrirlo.');
+  updated.id=current.id;updated.iso=current.iso;updated.guia=current.guia;
+  updated.fotos=updated.fotos||current.fotos||[];
+  updated.editedAt=new Date().toISOString();updated.editVersion=(Number(current.editVersion)||0)+1;
+  await putLocal(updated);
+  editingRecord=null;$('editPanel').classList.add('hidden');
+  await renderHistory();detail(updated);
+  AppMotion.notify('Movimiento actualizado en este celular.');
+ }catch(err){alert('No se pudieron guardar los cambios: '+err.message)}finally{button.disabled=false}
+};
+
 $('historyReload').onclick=()=>AppMotion.task($('history'),renderHistory).catch(AppMotion.error);
 $('historyClearFilters').onclick=()=>{$('search').value='';$('filter').value='Todos';$('from').value='';$('to').value='';AppMotion.task($('history'),renderHistory).catch(AppMotion.error)};
 for(let id of ['search','filter','from','to'])$(id).addEventListener('input',()=>AppMotion.task($('history'),renderHistory).catch(AppMotion.error));
