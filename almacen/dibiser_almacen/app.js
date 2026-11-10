@@ -223,7 +223,8 @@ async function refreshSharedHistory(){
   const local=await allLocal();
   if(!cloud.status().authorized){
    await renderHistory();
-   $('historySyncStatus').textContent='Historial local: '+local.length+' movimientos. Abre el enlace privado autorizado para consultar otros celulares.';
+   $('historySyncStatus').dataset.cloudInfo='';
+   $('historySyncStatus').textContent='Solo este celular: '+local.length+' movimientos. Pega el enlace privado en Historial central DIBISER para consultar la base compartida.';
    return;
   }
   const remote=await cloud.all(true);
@@ -252,6 +253,17 @@ renderCatalog();
 
 /* Panel de conexión central: sin activación automática ni pérdida de los datos locales. */
 const cloud=window.DibiserCloud;
+$('privateLinkActivate').onclick=async()=>{
+ const button=$('privateLinkActivate');if(button.disabled)return;button.disabled=true;
+ try{
+  await cloud.activatePrivateLink($('privateLinkInput').value);
+  $('privateLinkInput').value='';
+  cloudStatusRender('Enlace validado. Consultando movimientos de todos los celulares...');
+  await cloudRefresh();
+  if(!$('history').classList.contains('hidden'))await refreshSharedHistory();
+ }catch(e){cloudStatusRender('No se pudo conectar este celular: '+e.message);alert(e.message)}
+ finally{button.disabled=false}
+};
 let recoveryActive=false,recoveryDone=false,recoveryFound=0;
 const recoveryVerifiedIds=new Set();
 async function checkLocalRecovery(){
@@ -367,6 +379,7 @@ function cloudStatusRender(message){
  const label=s.linkMode?(s.authorized?'Enlace privado validado: todos los celulares autorizados comparten el mismo historial.':'Verificando acceso privado de DIBISER...')
   :'Acceso restringido. Solicita a DIBISER el enlace privado para ver y registrar movimientos.';
  $('cloudStatus').textContent=message||label;
+ $('privateLinkActivation').classList.toggle('hidden',!!s.authorized);
  $('cloudConfigFields').classList.add('hidden');
  $('cloudAuthFields').classList.add('hidden');
  $('cloudHelp').classList.toggle('hidden',s.linkMode&&s.authorized);
