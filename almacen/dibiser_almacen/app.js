@@ -314,14 +314,21 @@ async function checkLocalRecovery(){
    'Se encontraron '+local.length+' movimientos anteriores en este dispositivo. Se conservan y se mostrarán junto al historial central.':
    'No se encontraron movimientos en el almacenamiento de este navegador. Los de otra instalación o navegador pueden estar allí.';
   $('recoveryBackup').disabled=!local.length;
+  $('recoveryView').disabled=!local.length;
   $('recoverySync').disabled=!local.length||!cloud.status().authorized;
   return local;
  }catch(e){
   $('recoveryStatus').textContent='No se pudo leer el historial de este navegador: '+e.message;
-  $('recoveryBackup').disabled=true;$('recoverySync').disabled=true;
+  $('recoveryBackup').disabled=true;$('recoveryView').disabled=true;$('recoverySync').disabled=true;
   return [];
  }
 }
+$('recoveryView').onclick=async()=>{
+ const rows=await allLocal(),target=$('recoveryLocalList');
+ target.classList.remove('hidden');
+ if(!rows.length){target.textContent='En este navegador no aparecen movimientos locales. Comprueba la aplicación original donde fueron registrados.';return;}
+ target.innerHTML='<p><strong>'+rows.length+' movimientos guardados en este dispositivo</strong></p><table><thead><tr><th>Fecha</th><th>Placa</th><th>Movimiento</th><th>Guía</th></tr></thead><tbody>'+rows.slice(0,200).map(r=>'<tr><td>'+esc(new Date(r.iso).toLocaleString('es-PE'))+'</td><td>'+esc(r.placa||'')+'</td><td>'+esc(r.tipo||'')+'</td><td>'+esc(r.guia||'')+'</td></tr>').join('')+'</tbody></table>'+(rows.length>200?'<p class="muted">Se muestran los 200 más recientes. El respaldo incluye todos.</p>':'');
+};
 $('recoveryBackup').onclick=async()=>{
  const local=await allLocal();
  if(!local.length)return alert('Este navegador no contiene movimientos locales. Abre la instalación donde registrabas los movimientos.');
