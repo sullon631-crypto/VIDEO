@@ -33,6 +33,15 @@ const dbp=new Promise((resolve,reject)=>{const req=indexedDB.open('dibiser_almac
 async function allLocal(){const db=await dbp;return new Promise((res,rej)=>{let r=db.transaction('movements').objectStore('movements').getAll();r.onsuccess=()=>res(r.result.sort((a,b)=>b.iso.localeCompare(a.iso)));r.onerror=()=>rej(r.error)})}
 async function putLocal(r){const db=await dbp;return new Promise((res,rej)=>{let t=db.transaction('movements','readwrite');t.objectStore('movements').put(r);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
 async function all(){return window.DibiserCloud?.connected()?window.DibiserCloud.all():allLocal()}
+async function updateMovement(record,previousVersion){
+ if(window.DibiserCloud?.connected()){
+   const saved=await window.DibiserCloud.update(record,previousVersion);
+   await putLocal(saved);return saved;
+ }
+ if(window.DibiserCloud?.configured())throw Error('Inicia sesión en la nube para editar el historial central.');
+ const saved={...record,editVersion:previousVersion+1,editedAt:new Date().toISOString()};
+ await putLocal(saved);return saved;
+}
 async function put(r){
  if(window.DibiserCloud?.connected()){
    // El servidor asigna el correlativo definitivo incluso con varios celulares simultáneos.
@@ -206,8 +215,56 @@ async function renderReport(){let date=$('reportDate').value,rr=(await all()).fi
 $('reportDate').onchange=()=>AppMotion.task($('report'),renderReport).catch(AppMotion.error);
 function download(name,blob){let a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 $('excel').onclick=async()=>{const button=$('excel'),date=$('reportDate').value;if(!date)return AppMotion.notify('Selecciona una fecha para exportar.');if(button.disabled)return;button.disabled=true;const label=button.textContent;button.textContent='Preparando Excel…';try{const rows=(await all()).filter(r=>dateKey(r.iso)===date);if(!window.DibiserExcel?.build)throw Error('Exportador Excel no disponible. Abre la aplicación con conexión y vuelve a intentar.');const file=window.DibiserExcel.build(rows,date);download('DIBISER_movimientos_'+date+'.xlsx',file);AppMotion.notify('Libro Excel descargado con movimientos y resumen.')}catch(err){AppMotion.notify('No se pudo exportar Excel: '+err.message)}finally{button.disabled=false;button.textContent=label}};
-async function renderHistory(){let rr=await all(),q=$('search').value.toLocaleLowerCase('es'),f=$('filter').value,from=$('from').value,to=$('to').value;rr=rr.filter(r=>(f==='Todos'||r.tipo===f)&&(!from||dateKey(r.iso)>=from)&&(!to||dateKey(r.iso)<=to)&&[r.id,r.placa,r.carreta||'',r.camaBaja||'',r.maquinariaTransportada||'',r.trabajo||'',r.cliente,r.conductor,r.material].some(v=>v.toLocaleLowerCase('es').includes(q)));$('historyRows').innerHTML=rr.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(new Date(r.iso).toLocaleString('es-PE'))}</td><td>${esc(r.tipo)}</td><td>${esc(r.placa)}</td><td>${esc(r.cliente)}</td><td>${esc(r.conductor)}</td><td>${esc(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:r.material))}</td><td>${r.configTransporte==='Trabajo / servicio'?'—':esc(r.cantidad)+' '+esc(r.unidad)}</td><td><button class="view" data-id="${esc(r.id)}">Ver</button></td></tr>`).join('')||'<tr><td colspan="9">No se encontraron movimientos</td></tr>';document.querySelectorAll('.view').forEach(b=>b.onclick=()=>detail(rr.find(r=>r.id===b.dataset.id)))}
-function detail(r){$('detail').innerHTML=`<div class="card" style="margin-top:16px"><h3>Detalle ${esc(r.id)}</h3><p><b>Fecha:</b> ${esc(new Date(r.iso).toLocaleString('es-PE'))} · <b>Movimiento:</b> ${esc(r.tipo)} · <b>Placa:</b> ${esc(r.placa)}</p><p><b>Cliente:</b> ${esc(r.cliente)} · <b>Conductor:</b> ${esc(r.conductor)}</p><p><b>Configuración:</b> ${esc(r.configTransporte||'Unidad sola')} · <b>Carreta:</b> ${esc(r.carreta||'No aplica')} · <b>Cama baja:</b> ${esc(r.camaBaja||'No aplica')}</p><p><b>${r.maquinariaTransportada?'Maquinaria transportada':'Material'}:</b> ${esc(r.maquinariaTransportada||r.material)} · <b>Cantidad:</b> ${r.configTransporte==='Trabajo / servicio'?'No aplica':esc(r.cantidad)+' '+esc(r.unidad)} · <b>Guía:</b> ${esc(r.guia)}</p><p><b>Trabajo / motivo de salida:</b> ${esc(r.trabajo||'No especificado')}</p><p><b>Autorización:</b> ${esc(r.autorizacion)} · <b>Responsable:</b> ${esc(r.responsable)}</p><p><b>Observaciones:</b> ${esc(r.observaciones)}</p><div class="photo">${(r.fotos||[]).map(s=>`<a href="${s}" target="_blank"><img alt="Foto" src="${s}"></a>`).join('')}</div></div>`}
+async function renderHistory(){let rr=await all(),q=$('search').value.toLocaleLowerCase('es'),f=$('filter').value,from=$('from').value,to=$('to').value;rr=rr.filter(r=>(f==='Todos'||r.tipo===f)&&(!from||dateKey(r.iso)>=from)&&(!to||dateKey(r.iso)<=to)&&[r.id,r.placa,r.carreta||'',r.camaBaja||'',r.maquinariaTransportada||'',r.trabajo||'',r.cliente,r.conductor,r.material].some(v=>v.toLocaleLowerCase('es').includes(q)));$('historyRows').innerHTML=rr.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(new Date(r.iso).toLocaleString('es-PE'))}</td><td>${esc(r.tipo)}</td><td>${esc(r.placa)}</td><td>${esc(r.cliente)}</td><td>${esc(r.conductor)}</td><td>${esc(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:r.material))}</td><td>${r.configTransporte==='Trabajo / servicio'?'—':esc(r.cantidad)+' '+esc(r.unidad)}</td><td><button class="view" data-id="${esc(r.id)}">Ver</button> <button class="edit" data-id="${esc(r.id)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="9">No se encontraron movimientos</td></tr>';document.querySelectorAll('.view').forEach(b=>b.onclick=()=>detail(rr.find(r=>r.id===b.dataset.id)));document.querySelectorAll('.edit').forEach(b=>b.onclick=()=>abrirEdicion(rr.find(r=>r.id===b.dataset.id)))}
+function detail(r){$('detail').innerHTML=`<div class="card" style="margin-top:16px"><h3>Detalle ${esc(r.id)}</h3><p><b>Fecha:</b> ${esc(new Date(r.iso).toLocaleString('es-PE'))} · <b>Movimiento:</b> ${esc(r.tipo)} · <b>Placa:</b> ${esc(r.placa)}</p><p><b>Cliente:</b> ${esc(r.cliente)} · <b>Conductor:</b> ${esc(r.conductor)}</p><p><b>Configuración:</b> ${esc(r.configTransporte||'Unidad sola')} · <b>Carreta:</b> ${esc(r.carreta||'No aplica')} · <b>Cama baja:</b> ${esc(r.camaBaja||'No aplica')}</p><p><b>${r.maquinariaTransportada?'Maquinaria transportada':'Material'}:</b> ${esc(r.maquinariaTransportada||r.material)} · <b>Cantidad:</b> ${r.configTransporte==='Trabajo / servicio'?'No aplica':esc(r.cantidad)+' '+esc(r.unidad)} · <b>Guía:</b> ${esc(r.guia)}</p><p><b>Trabajo / motivo de salida:</b> ${esc(r.trabajo||'No especificado')}</p><p><b>Autorización:</b> ${esc(r.autorizacion)} · <b>Responsable:</b> ${esc(r.responsable)}</p><p><b>Observaciones:</b> ${esc(r.observaciones)}</p><div class="photo">${(r.fotos||[]).map(s=>`<a href="${s}" target="_blank"><img alt="Foto" src="${s}"></a>`).join('')}</div><div class="actions"><button type="button" id="editarDetalle">Editar registro</button></div></div>`; $('editarDetalle').onclick=()=>abrirEdicion(r);}
+let registroEnEdicion=null;
+const EDIT_PROPS={tipo:'editTipo',placa:'editPlaca',configTransporte:'editConfig',cliente:'editCliente',conductor:'editConductor',carreta:'editCarreta',camaBaja:'editCamaBaja',maquinariaTransportada:'editMaquinaria',material:'editMaterial',trabajo:'editTrabajo',cantidad:'editCantidad',unidad:'editUnidad',autorizacion:'editAutorizacion',responsable:'editResponsable',observaciones:'editObservaciones'};
+function abrirEdicion(record){
+ if(!record)return;
+ registroEnEdicion=structuredClone(record);
+ for(const [key,id] of Object.entries(EDIT_PROPS))$(id).value=record[key]??'';
+ $('editInfo').textContent='Editando '+record.id+' · Guía '+(record.guia||'sin guía')+'. Se conservan el código y la fecha originales.';
+ $('editFoto').value='';
+ $('editPanel').classList.remove('hidden');
+ $('editPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('cancelarEdicion').onclick=()=>{registroEnEdicion=null;$('editPanel').classList.add('hidden')};
+$('editForm').onsubmit=async e=>{
+ e.preventDefault();
+ if(!registroEnEdicion)return;
+ const button=$('editForm').querySelector('[type="submit"]');if(button.disabled)return;
+ const changed={...registroEnEdicion};
+ for(const [key,id] of Object.entries(EDIT_PROPS))changed[key]=$(id).value.trim();
+ const config=changed.configTransporte;
+ if(config==='Trabajo / servicio'&&changed.tipo!=='Salida')return alert('Trabajo / servicio solo puede ser salida.');
+ if(!changed.placa||!changed.conductor)return alert('Indica placa y conductor.');
+ if(config==='Trabajo / servicio'){
+   if(!changed.trabajo)return alert('Debes indicar el motivo de salida.');
+   changed.cliente='';changed.material='';changed.cantidad=null;changed.unidad='';changed.carreta='';changed.camaBaja='';changed.maquinariaTransportada='';
+ }else if(config==='Con cama baja'){
+   if(!changed.camaBaja||!changed.maquinariaTransportada)return alert('Indica cama baja y maquinaria transportada.');
+   changed.material='';changed.trabajo='';changed.carreta='';
+   changed.cantidad=Number(changed.cantidad);if(!(changed.cantidad>0))return alert('Cantidad inválida.');
+ }else{
+   if(!changed.cliente||!changed.material)return alert('Indica cliente y material.');
+   changed.cantidad=Number(changed.cantidad);
+   if(!Number.isFinite(changed.cantidad)||changed.cantidad<=0)return alert('Cantidad inválida.');
+   if(config==='Con carreta'&&!changed.carreta)return alert('Indica la carreta o tolvón.');
+   changed.camaBaja='';changed.maquinariaTransportada='';changed.trabajo='';
+   if(config!=='Con carreta')changed.carreta='';
+ }
+ const photo=$('editFoto').files[0];
+ if(photo){try{changed.fotos=[await compress(photo)];}catch(err){return alert('Fotografía inválida: '+err.message)}}
+ if(!confirm('¿Guardar la edición de '+changed.id+'? Se conservará la guía original y la fecha del movimiento.'))return;
+ button.disabled=true;
+ try{
+   const saved=await updateMovement(changed,Number(registroEnEdicion.editVersion)||0);
+   registroEnEdicion=null;$('editPanel').classList.add('hidden');
+   await renderHistory();detail(saved);
+   AppMotion.notify('Movimiento actualizado: '+saved.id);
+ }catch(err){alert('No se pudo editar el movimiento: '+err.message)}
+ finally{button.disabled=false;}
+};
 for(let id of ['search','filter','from','to'])$(id).addEventListener('input',()=>AppMotion.task($('history'),renderHistory).catch(AppMotion.error));
 function renderCatalog(){renderCapacidades();let k=$('catalogType').value,q=$('catalogSearch').value.toLocaleLowerCase('es');let a=catalogs[k].filter(v=>v.toLocaleLowerCase('es').includes(q));$('catalogList').innerHTML=`<p class="muted">${a.length} de ${catalogs[k].length} registros</p><table>${a.map(v=>`<tr><td>${esc(v)}</td></tr>`).join('')}</table>`}
 
