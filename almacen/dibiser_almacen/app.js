@@ -497,7 +497,7 @@ async function cloudRefresh(){
  if(!await cloud.member()){cloudStatusRender('El enlace privado no es válido o fue revocado. Solicita uno nuevo a DIBISER.');return;}
  await cloud.all(true);await cloudPullCatalogs();
  if(!recoveryDone)await recuperarHistorialAutomatico();
- if(!$('history').classList.contains('hidden'))await renderHistory();
+ if(!$('history').classList.contains('hidden'))await refreshSharedHistory();
  if(!$('report').classList.contains('hidden'))await renderReport();
  await mostrarGuiaAutomatica();
  cloudStatusRender();
