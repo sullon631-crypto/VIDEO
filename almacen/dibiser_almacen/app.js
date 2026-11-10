@@ -9,6 +9,25 @@ for(const k of ['placas','maquinarias','carretas','camasBajas','responsables','t
   catalogs[k]=[...new Set(items)].filter(v=>!(['placas','maquinarias'].includes(k)&&remolquesExcluidos.has(v.toLocaleUpperCase('es'))));
 }
 const saveCats=()=>localStorage.setItem('dibiser_catalogs',JSON.stringify(catalogs));
+const CAP_KEY='dibiser_capacidades_v1';
+let capacidades={};
+try{capacidades=JSON.parse(localStorage.getItem(CAP_KEY)||'{}')||{};}catch{}
+const CAP_INICIALES={'BTN-867':{tipo:'Volquete',cantidad:26,unidad:'m³',fuente:'Dato declarado por DIBISER'},'T9K-863':{tipo:'Volquete',cantidad:17,unidad:'m³',fuente:'Dato declarado por DIBISER'}};
+for(const [plate,cap] of Object.entries(CAP_INICIALES)){if(!capacidades[plate])capacidades[plate]={...cap,updatedAt:'2026-11-09T12:00:00.000Z'};}
+function guardarCapacidades(){localStorage.setItem(CAP_KEY,JSON.stringify(capacidades));}
+guardarCapacidades();
+function capacidadElegida(){const plate=$('configTransporte').value==='Con carreta'&&$('carretas').value.trim()?$('carretas').value.trim():$('placas').value.trim();return {plate,cap:capacidades[plate]||null};}
+function actualizarCantidadAutomatica(){
+ const servicio=$('configTransporte').value==='Trabajo / servicio',cama=$('configTransporte').value==='Con cama baja';
+ $('campoModoCantidad').classList.toggle('hidden',servicio||cama);
+ if(servicio||cama)return;
+ const mode=$('modoCantidad').value,{plate,cap}=capacidadElegida(),input=$('cantidad');
+ $('infoCapacidad').textContent=cap?'Capacidad registrada de '+plate+': '+cap.cantidad+' '+cap.unidad+' · '+cap.tipo:'Sin capacidad confirmada para '+(plate||'esta unidad')+'. Regístrala en Catálogos > Capacidades o usa metraje manual.';
+ if(mode==='viaje'){input.value='1';$('unidad').value='Viaje';input.readOnly=true;}
+ else if(mode==='auto'&&cap){input.value=String(cap.cantidad);if(![...$('unidad').options].some(x=>x.value===cap.unidad))$('unidad').add(new Option(cap.unidad,cap.unidad));$('unidad').value=cap.unidad;input.readOnly=true;}
+ else {input.readOnly=false;if(mode==='auto'&&!cap){input.value='';}if($('unidad').value==='Viaje')$('unidad').value='m³';}
+}
+
 saveCats();
 const dbp=new Promise((resolve,reject)=>{const req=indexedDB.open('dibiser_almacen_v1',1);req.onupgradeneeded=()=>req.result.createObjectStore('movements',{keyPath:'id'});req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
 async function allLocal(){const db=await dbp;return new Promise((res,rej)=>{let r=db.transaction('movements').objectStore('movements').getAll();r.onsuccess=()=>res(r.result.sort((a,b)=>b.iso.localeCompare(a.iso)));r.onerror=()=>rej(r.error)})}
@@ -46,7 +65,7 @@ for(const root of document.querySelectorAll('[data-combo]')){
  function render(){
   const q=inp.value.trim().toLocaleLowerCase('es');const matches=catalogs[k].filter(x=>x.toLocaleLowerCase('es').includes(q)).slice(0,75);
   menu.replaceChildren();
-  for(const x of matches){const b=document.createElement('button');b.type='button';b.textContent=x;b.onclick=()=>{inp.value=x;close();inp.focus({preventScroll:true});close()};menu.append(b)}
+  for(const x of matches){const b=document.createElement('button');b.type='button';b.textContent=x;b.onclick=()=>{inp.value=x;inp.dispatchEvent(new Event('change',{bubbles:true}));close();inp.focus({preventScroll:true});close()};menu.append(b)}
   if(!matches.length)menu.innerHTML='<div class="muted" style="padding:10px">Sin coincidencias. Usa ＋ para agregar.</div>';
   AppMotion.show(menu,'menu');inp.setAttribute('aria-expanded','true');
  }
@@ -106,11 +125,12 @@ function actualizarTransporte(){
   $('carretas').required=carreta;
   $('camasBajas').required=cama;
   $('cantidad').required=!servicio;
-  if(cama){$('materiales').value='';$('unidad').value='Unidad';$('cantidad').value='1';}
-  else if(servicio){$('materiales').value='';$('cantidad').value='';$('unidad').value='Unidad';}
+  if(cama){$('materiales').value='';$('unidad').value='Unidad';$('cantidad').value='1';$('cantidad').readOnly=false;}
+  else if(servicio){$('materiales').value='';$('cantidad').value='';$('unidad').value='Unidad';$('cantidad').readOnly=false;}
   if(!carreta)$('carretas').value='';
   if(!cama){$('camasBajas').value='';$('maquinarias').value='';}
   actualizarTrabajo();
+  actualizarCantidadAutomatica();
 }
 function actualizarTrabajo(){
   const activo=$('tipo').value==='Salida'&&$('configTransporte').value==='Trabajo / servicio';
@@ -120,6 +140,9 @@ function actualizarTrabajo(){
 }
 $('tipo').addEventListener('change',actualizarTransporte);
 $('configTransporte').addEventListener('change',actualizarTransporte);
+$('modoCantidad').addEventListener('change',actualizarCantidadAutomatica);
+for(const id of ['placas','carretas']){$(id).addEventListener('input',()=>setTimeout(actualizarCantidadAutomatica,0));$(id).addEventListener('change',actualizarCantidadAutomatica);}
+
 actualizarTransporte();
 
 let photoData=[],photoProcessing=false;
@@ -186,9 +209,34 @@ $('excel').onclick=async()=>{const button=$('excel'),date=$('reportDate').value;
 async function renderHistory(){let rr=await all(),q=$('search').value.toLocaleLowerCase('es'),f=$('filter').value,from=$('from').value,to=$('to').value;rr=rr.filter(r=>(f==='Todos'||r.tipo===f)&&(!from||dateKey(r.iso)>=from)&&(!to||dateKey(r.iso)<=to)&&[r.id,r.placa,r.carreta||'',r.camaBaja||'',r.maquinariaTransportada||'',r.trabajo||'',r.cliente,r.conductor,r.material].some(v=>v.toLocaleLowerCase('es').includes(q)));$('historyRows').innerHTML=rr.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(new Date(r.iso).toLocaleString('es-PE'))}</td><td>${esc(r.tipo)}</td><td>${esc(r.placa)}</td><td>${esc(r.cliente)}</td><td>${esc(r.conductor)}</td><td>${esc(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:r.material))}</td><td>${r.configTransporte==='Trabajo / servicio'?'—':esc(r.cantidad)+' '+esc(r.unidad)}</td><td><button class="view" data-id="${esc(r.id)}">Ver</button></td></tr>`).join('')||'<tr><td colspan="9">No se encontraron movimientos</td></tr>';document.querySelectorAll('.view').forEach(b=>b.onclick=()=>detail(rr.find(r=>r.id===b.dataset.id)))}
 function detail(r){$('detail').innerHTML=`<div class="card" style="margin-top:16px"><h3>Detalle ${esc(r.id)}</h3><p><b>Fecha:</b> ${esc(new Date(r.iso).toLocaleString('es-PE'))} · <b>Movimiento:</b> ${esc(r.tipo)} · <b>Placa:</b> ${esc(r.placa)}</p><p><b>Cliente:</b> ${esc(r.cliente)} · <b>Conductor:</b> ${esc(r.conductor)}</p><p><b>Configuración:</b> ${esc(r.configTransporte||'Unidad sola')} · <b>Carreta:</b> ${esc(r.carreta||'No aplica')} · <b>Cama baja:</b> ${esc(r.camaBaja||'No aplica')}</p><p><b>${r.maquinariaTransportada?'Maquinaria transportada':'Material'}:</b> ${esc(r.maquinariaTransportada||r.material)} · <b>Cantidad:</b> ${r.configTransporte==='Trabajo / servicio'?'No aplica':esc(r.cantidad)+' '+esc(r.unidad)} · <b>Guía:</b> ${esc(r.guia)}</p><p><b>Trabajo / motivo de salida:</b> ${esc(r.trabajo||'No especificado')}</p><p><b>Autorización:</b> ${esc(r.autorizacion)} · <b>Responsable:</b> ${esc(r.responsable)}</p><p><b>Observaciones:</b> ${esc(r.observaciones)}</p><div class="photo">${(r.fotos||[]).map(s=>`<a href="${s}" target="_blank"><img alt="Foto" src="${s}"></a>`).join('')}</div></div>`}
 for(let id of ['search','filter','from','to'])$(id).addEventListener('input',()=>AppMotion.task($('history'),renderHistory).catch(AppMotion.error));
-function renderCatalog(){let k=$('catalogType').value,q=$('catalogSearch').value.toLocaleLowerCase('es');let a=catalogs[k].filter(v=>v.toLocaleLowerCase('es').includes(q));$('catalogList').innerHTML=`<p class="muted">${a.length} de ${catalogs[k].length} registros</p><table>${a.map(v=>`<tr><td>${esc(v)}</td></tr>`).join('')}</table>`}
+function renderCatalog(){renderCapacidades();let k=$('catalogType').value,q=$('catalogSearch').value.toLocaleLowerCase('es');let a=catalogs[k].filter(v=>v.toLocaleLowerCase('es').includes(q));$('catalogList').innerHTML=`<p class="muted">${a.length} de ${catalogs[k].length} registros</p><table>${a.map(v=>`<tr><td>${esc(v)}</td></tr>`).join('')}</table>`}
+
+function renderCapacidades(){
+ const sel=$('capPlaca'),previous=sel.value;
+ const plates=[...new Set([...(catalogs.placas||[]),...(catalogs.carretas||[]),...Object.keys(capacidades)])];
+ plates.sort((a,b)=>a.localeCompare(b,'es'));
+ sel.replaceChildren(...plates.map(p=>new Option(p,p)));
+ if(plates.includes(previous))sel.value=previous;
+ if(!sel.value&&plates.length)sel.value=plates[0];
+ const rows=Object.entries(capacidades).sort(([a],[b])=>a.localeCompare(b,'es'));
+ $('capListado').innerHTML='<table><thead><tr><th>Placa</th><th>Tipo</th><th>Capacidad</th></tr></thead><tbody>'+rows.map(([k,v])=>'<tr><td>'+esc(k)+'</td><td>'+esc(v.tipo)+'</td><td>'+esc(v.cantidad)+' '+esc(v.unidad)+'</td></tr>').join('')+'</tbody></table>';
+}
+$('capPlaca').onchange=()=>{
+ const entry=capacidades[$('capPlaca').value];
+ if(entry){$('capTipo').value=entry.tipo;$('capVolumen').value=entry.cantidad;$('capUnidad').value=entry.unidad;}
+ else $('capVolumen').value='';
+};
+$('capGuardar').onclick=async()=>{
+ const plate=$('capPlaca').value,amount=Number($('capVolumen').value);
+ if(!plate||!Number.isFinite(amount)||amount<=0)return alert('Selecciona la placa e ingresa su capacidad real.');
+ if(!confirm('¿Confirmas que '+plate+' tiene una capacidad de '+amount+' '+$('capUnidad').value+'?'))return;
+ const entry={tipo:$('capTipo').value,cantidad:amount,unidad:$('capUnidad').value,fuente:'Configurada por DIBISER',updatedAt:new Date().toISOString()};
+ capacidades[plate]=entry;guardarCapacidades();renderCapacidades();actualizarCantidadAutomatica();
+ if(window.DibiserCloud?.connected())await window.DibiserCloud.saveCatalog('capacidadUnidad',JSON.stringify({placa:plate,...entry})).catch(e=>AppMotion.notify('Capacidad guardada localmente; error de sincronización: '+e.message));
+ AppMotion.notify('Capacidad registrada para '+plate);
+};
 $('catalogType').onchange=renderCatalog;$('catalogSearch').oninput=renderCatalog;$('catalogAdd').onclick=()=>{let v=$('catalogNew').value;if(!v.trim())return;addCatalog($('catalogType').value,v);$('catalogNew').value='';renderCatalog()};
-$('backup').onclick=async()=>{let backup={version:2,exportedAt:new Date().toISOString(),catalogs,records:await all(),localRecords:window.DibiserCloud?.connected()?await allLocal():undefined};download('DIBISER_respaldo_'+today()+'.json',new Blob([JSON.stringify(backup)],{type:'application/json'}))};$('restore').onclick=()=>$('restoreFile').click();$('restoreFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(!d.catalogs||!Array.isArray(d.records)||!['clientes','conductores','placas','materiales'].every(k=>Array.isArray(d.catalogs[k])))throw Error('Formato incorrecto');if(!confirm(`Importar ${d.records.length} registros? Los códigos existentes se actualizarán.`))return;for(let r of d.records){if(!r.id||!r.iso)throw Error('Registro inválido');await putLocal(r)}for(const k of Object.keys(INITIAL)){const previous=Array.isArray(catalogs[k])?catalogs[k]:[];const existing=Array.isArray(d.catalogs[k])?d.catalogs[k]:[];catalogs[k]=[...new Set([...previous,...existing,...INITIAL[k]])];}for(const k of ['placas','maquinarias'])catalogs[k]=catalogs[k].filter(v=>!remolquesExcluidos.has(String(v).trim().toLocaleUpperCase('es')));saveCats();renderCatalog();alert('Respaldo importado')}catch(err){alert('No se pudo importar: '+err.message)}e.target.value=''};
+$('backup').onclick=async()=>{let backup={version:3,exportedAt:new Date().toISOString(),catalogs,capacidades,records:await all(),localRecords:window.DibiserCloud?.connected()?await allLocal():undefined};download('DIBISER_respaldo_'+today()+'.json',new Blob([JSON.stringify(backup)],{type:'application/json'}))};$('restore').onclick=()=>$('restoreFile').click();$('restoreFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(!d.catalogs||!Array.isArray(d.records)||!['clientes','conductores','placas','materiales'].every(k=>Array.isArray(d.catalogs[k])))throw Error('Formato incorrecto');if(!confirm(`Importar ${d.records.length} registros? Los códigos existentes se actualizarán.`))return;for(let r of d.records){if(!r.id||!r.iso)throw Error('Registro inválido');await putLocal(r)}for(const k of Object.keys(INITIAL)){const previous=Array.isArray(catalogs[k])?catalogs[k]:[];const existing=Array.isArray(d.catalogs[k])?d.catalogs[k]:[];catalogs[k]=[...new Set([...previous,...existing,...INITIAL[k]])];}for(const k of ['placas','maquinarias'])catalogs[k]=catalogs[k].filter(v=>!remolquesExcluidos.has(String(v).trim().toLocaleUpperCase('es')));saveCats();if(d.capacidades&&typeof d.capacidades==='object'){for(const [p,entry] of Object.entries(d.capacidades))if(entry.cantidad>0)capacidades[p]=entry;guardarCapacidades();}renderCatalog();alert('Respaldo importado')}catch(err){alert('No se pudo importar: '+err.message)}e.target.value=''};
 renderCatalog();
 
 
@@ -206,7 +254,9 @@ function cloudStatusRender(message){
 async function cloudPullCatalogs(){
  if(!cloud.connected())return;
  const remote=await cloud.catalogItems();
- for(const item of remote){if(Array.isArray(catalogs[item.kind])&&!catalogs[item.kind].includes(item.value)){catalogs[item.kind].push(item.value);}}
+ for(const item of remote.filter(x=>x.kind==='capacidadUnidad')){try{const e=JSON.parse(item.value);if(e.placa&&e.cantidad>0&&(!capacidades[e.placa]||String(e.updatedAt)>String(capacidades[e.placa].updatedAt))){capacidades[e.placa]={tipo:e.tipo,cantidad:e.cantidad,unidad:e.unidad,fuente:e.fuente,updatedAt:e.updatedAt};}}catch{}}
+ guardarCapacidades();renderCapacidades();actualizarCantidadAutomatica();
+ for(const item of remote.filter(x=>x.kind!=='capacidadUnidad')){if(Array.isArray(catalogs[item.kind])&&!catalogs[item.kind].includes(item.value)){catalogs[item.kind].push(item.value);}}
  saveCats();renderCatalog();
 }
 async function cloudRefresh(){
@@ -238,9 +288,10 @@ $('cloudImport').onclick=async()=>{
  b.disabled=true;
  try{
   // Respaldo obligatorio previo a cualquier migración.
-  download('DIBISER_ANTES_DE_SINCRONIZAR_'+today()+'.json',new Blob([JSON.stringify({version:2,catalogs,records:rows})],{type:'application/json'}));
+  download('DIBISER_ANTES_DE_SINCRONIZAR_'+today()+'.json',new Blob([JSON.stringify({version:3,catalogs,capacidades,records:rows})],{type:'application/json'}));
   await cloud.importRows(rows,(done,total)=>{$('cloudStatus').textContent='Subiendo registros: '+done+' / '+total;});
   for(const [kind,values] of Object.entries(catalogs))for(const v of values)await cloud.saveCatalog(kind,v);
+  for(const [plate,entry] of Object.entries(capacidades))await cloud.saveCatalog('capacidadUnidad',JSON.stringify({placa:plate,...entry}));
   await cloudRefresh();alert('Importación completada. El historial compartido ya incluye los registros de este celular.');
  }catch(err){alert('Importación interrumpida: '+err.message+'. Los datos locales se han conservado. Puedes repetir la importación.')}
  finally{b.disabled=false;cloudStatusRender()}
