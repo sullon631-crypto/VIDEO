@@ -3,20 +3,20 @@
 (function(){
 'use strict';
 const K='dibiser_cloud_config',S='dibiser_cloud_session';
-let cfg={},session=null,cache=null,cacheTime=0;
+let cfg={},session=null,cache=null,cacheTime=0,memberStatus=false;
 try{cfg=JSON.parse(localStorage.getItem(K)||'{}');session=JSON.parse(localStorage.getItem(S)||'null');}catch{}
 const configured=()=>/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(cfg.url||'')&&!!cfg.key;
 /* Clave publicable del proyecto, segura para uso web con RLS. Nunca service_role. */
 if(!configured()){cfg={url:"https://afkghhioiklvnucwhylz.supabase.co",key:"sb_publishable_cvdWumZ_RPMqhx0n2ahsAw_Ti7CwkHC"};localStorage.setItem(K,JSON.stringify(cfg));}
 
 const connected=()=>configured()&&!!session?.access_token;
-const status=()=>({configured:configured(),connected:connected(),email:session?.user?.email||''});
+const status=()=>({configured:configured(),connected:connected(),authorized:connected()&&memberStatus,email:session?.user?.email||''});
 function setup(url,key){
  url=String(url||'').trim().replace(/\/$/,'');key=String(key||'').trim();
  if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)||!key)throw Error('Introduce URL https://...supabase.co y clave publicable (anon/publishable)');
  cfg={url,key};session=null;cache=null;localStorage.setItem(K,JSON.stringify(cfg));localStorage.removeItem(S);
 }
-function clear(){session=null;cache=null;localStorage.removeItem(S);}
+function clear(){session=null;cache=null;memberStatus=false;localStorage.removeItem(S);}
 function headers(auth){return {'apikey':cfg.key,'Content-Type':'application/json',...(auth?{'Authorization':'Bearer '+session.access_token}:{} )};}
 async function errorResponse(r){let t=await r.text();try{let j=JSON.parse(t);return j.message||j.msg||j.error_description||j.error||t}catch{return t||'HTTP '+r.status}}
 async function refresh(){
@@ -39,12 +39,18 @@ async function request(path,opt={},noAuth=false){
 async function login(email,password){
  if(!configured())throw Error('Configura primero la base de datos');
  const s=await request('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})},true);
- if(!s.access_token)throw Error('No se recibió sesión');session=s;localStorage.setItem(S,JSON.stringify(s));cache=null;return s;
+ if(!s.access_token)throw Error('No se recibió sesión');session=s;localStorage.setItem(S,JSON.stringify(s));cache=null;memberStatus=false;return s;
 }
 async function signup(email,password){
  if(!configured())throw Error('La base central no está configurada');
  const response=await request('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password})},true);
  return response;
+}
+async function member(){
+ if(!connected())return false;
+ const rows=await request('/rest/v1/dibiser_team_members?select=user_id&limit=1');
+ memberStatus=Array.isArray(rows)&&rows.length>0;
+ return memberStatus;
 }
 function logout(){clear();}
 async function all(force=false){
@@ -79,5 +85,5 @@ async function importRows(rows,onProgress){
  for(const row of rows){await save(row,null,true);done++;if(onProgress)onProgress(done,rows.length);}
  return done;
 }
-window.DibiserCloud={setup,configured,connected,status,login,signup,logout,all,save,update,preview,catalogItems,saveCatalog,importRows};
+window.DibiserCloud={setup,configured,connected,status,login,signup,member,logout,all,save,update,preview,catalogItems,saveCatalog,importRows};
 })();
