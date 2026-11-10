@@ -223,29 +223,52 @@ async function buildReportPDF(records, date) {
     const plate=upper(r.placa||'');
     if(plate&&doc.getTextWidth(plate)<102)doc.text(plate,W-margin-5,cardY+8.2,{align:'right'});
 
-    // El cuerpo usa hasta 14.6 pt frente a los 9.7 pt de la versión anterior.
-    const leftX=margin+5,bodyTop=cardY+19.2,textWidth=photoColumnX-leftX-5;
-    const bodyMaxH=cardH-25;
-    const sizes=[14.6,14,13.4,12.8,12.2,11.6,11,10.4,9.8];
-    let fontSize=sizes[sizes.length-1],lines=[],lineHeight=5;
-    for(const candidate of sizes){
-      regular(candidate);
-      const candidateLines=[];
-      for(const [label,val] of data){
-        const sentence=label+': '+text(val);
-        candidateLines.push(...doc.splitTextToSize(sentence,textWidth));
+    // Información ordenada en TABLA DE DOS COLUMNAS: Campo | Información.
+    // La imagen y el tamaño de la ficha permanecen sin cambios.
+    const tableX=margin+5,tableY=cardY+16,tableW=photoColumnX-tableX-6;
+    const labelW=55,infoW=tableW-labelW,headerH=9;
+    const availableH=cardY+cardH-4-tableY-headerH;
+    const fontSizes=[12.6,12.1,11.6,11.1,10.6,10.1,9.6,9.1,8.6,8.1,7.6,7.1];
+    let tableRows=[],selectedSize=fontSizes[fontSizes.length-1],tableLineH=3;
+    for(const candidate of fontSizes){
+      const lineH=candidate*0.405,measured=[];
+      for(const [field,value] of data){
+        doc.setFont('Inter','bold');doc.setFontSize(candidate);
+        const labels=doc.splitTextToSize(text(field),labelW-5.4);
+        doc.setFont('Inter','normal');doc.setFontSize(candidate);
+        const values=doc.splitTextToSize(text(value),infoW-5.4);
+        const rh=Math.max(6.6,Math.max(labels.length,values.length)*lineH+2.4);
+        measured.push({labels,values,height:rh});
       }
-      const candidateHeight=candidate*0.45;
-      fontSize=candidate;lines=candidateLines;lineHeight=candidateHeight;
-      if(lines.length*lineHeight<=bodyMaxH)break;
+      tableRows=measured;selectedSize=candidate;tableLineH=lineH;
+      if(measured.reduce((sum,r)=>sum+r.height,0)<=availableH)break;
     }
-    regular(fontSize);
-    let lineY=bodyTop;
-    for(const line of lines){
-      if(lineY>cardY+cardH-6)break;
-      doc.text(line,leftX,lineY);
-      lineY+=lineHeight;
+    doc.setFillColor(...navy);
+    doc.rect(tableX,tableY,tableW,headerH,'F');
+    bold(10.5,[255,255,255]);
+    doc.text('CAMPO',tableX+3,tableY+6);
+    doc.text('INFORMACIÓN',tableX+labelW+3,tableY+6);
+    let rowY=tableY+headerH;
+    doc.setDrawColor(211,222,229);
+    doc.setLineWidth(0.17);
+    for(let j=0;j<tableRows.length;j++){
+      const row=tableRows[j],rowH=row.height;
+      doc.setFillColor(...(j%2===0?[250,252,253]:[237,244,248]));
+      doc.rect(tableX,rowY,tableW,rowH,'F');
+      doc.line(tableX+labelW,rowY,tableX+labelW,rowY+rowH);
+      doc.line(tableX,rowY+rowH,tableX+tableW,rowY+rowH);
+      const drawLines=(lines,x,font)=>{
+        doc.setFont('Inter',font);doc.setFontSize(selectedSize);
+        doc.setTextColor(...navy);
+        let baseline=rowY+(rowH-lines.length*tableLineH)/2+tableLineH*0.85;
+        for(const line of lines){doc.text(line,x,baseline);baseline+=tableLineH;}
+      };
+      drawLines(row.labels,tableX+2.7,'bold');
+      drawLines(row.values,tableX+labelW+2.7,'normal');
+      rowY+=rowH;
     }
+    doc.setDrawColor(211,222,229);
+    doc.rect(tableX,tableY,tableW,rowY-tableY);
 
     // Evidencia fotográfica más de dos veces más alta que en el reporte anterior.
     const photoX=photoColumnX,photoY=cardY+16;
