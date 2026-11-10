@@ -14,7 +14,7 @@ AppMotion.init();
 renderPhotoPreview();
 
 // Export and restore show real pending state, including on slower phones.
-for(const id of ['csv','backup']){
+for(const id of ['excel','backup']){
  const button=$(id),action=button.onclick;
  button.onclick=async e=>{if(button.disabled)return;button.disabled=true;try{await AppMotion.task(button,()=>action(e))}catch(err){AppMotion.error(err)}finally{button.disabled=false}};
 }
