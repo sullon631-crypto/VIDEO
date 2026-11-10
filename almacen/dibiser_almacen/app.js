@@ -16,12 +16,18 @@ const CAP_INICIALES={'BTN-867':{tipo:'Volquete',cantidad:26,unidad:'m³',fuente:
 for(const [plate,cap] of Object.entries(CAP_INICIALES)){if(!capacidades[plate])capacidades[plate]={...cap,updatedAt:'2026-11-09T12:00:00.000Z'};}
 function guardarCapacidades(){localStorage.setItem(CAP_KEY,JSON.stringify(capacidades));}
 guardarCapacidades();
-function capacidadElegida(){const plate=$('configTransporte').value==='Con carreta'&&$('carretas').value.trim()?$('carretas').value.trim():$('placas').value.trim();return {plate,cap:capacidades[plate]||null};}
+function capacidadElegida(){
+ const conTolvón=$('configTransporte').value==='Con carreta';
+ // Cuando existe carreta o tolvón, su capacidad nunca se sustituye por la del camión tractor.
+ const plate=(conTolvón?$('carretas').value:$('placas').value).trim();
+ return {plate,cap:capacidades[plate]||null};
+}
 function actualizarCantidadAutomatica(){
  const servicio=$('configTransporte').value==='Trabajo / servicio',cama=$('configTransporte').value==='Con cama baja';
  $('campoModoCantidad').classList.toggle('hidden',servicio||cama);
  if(servicio||cama)return;
- const mode=$('modoCantidad').value,{plate,cap}=capacidadElegida(),input=$('cantidad');
+ let mode=$('modoCantidad').value;const {plate,cap}=capacidadElegida(),input=$('cantidad');
+ if(mode==='auto'&&!cap){$('modoCantidad').value='manual';mode='manual';}
  $('infoCapacidad').textContent=cap?'Capacidad registrada de '+plate+': '+cap.cantidad+' '+cap.unidad+' · '+cap.tipo:'Sin capacidad confirmada para '+(plate||'esta unidad')+'. Regístrala en Catálogos > Capacidades o usa metraje manual.';
  if(mode==='viaje'){input.value='1';$('unidad').value='Viaje';input.readOnly=true;}
  else if(mode==='auto'&&cap){input.value=String(cap.cantidad);if(![...$('unidad').options].some(x=>x.value===cap.unidad))$('unidad').add(new Option(cap.unidad,cap.unidad));$('unidad').value=cap.unidad;input.readOnly=true;}
