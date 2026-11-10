@@ -1,3 +1,12 @@
+## Estado real — 10 de noviembre de 2026 (v39)
+- Proyecto Supabase creado: **DIBISER - Control de Almacen**, referencia `afkghhioiklvnucwhylz`, región São Paulo, base activa.
+- Ya se instalaron y verificaron tablas de movimientos, catálogos, integrantes autorizados y auditoría de ediciones, con RLS.
+- La app contiene la URL y clave **publicable** de este proyecto; no requiere ingresar claves manualmente en cada celular.
+- **IMPORTANTE:** aún hay **0 cuentas de aplicación autorizadas y 0 movimientos importados**. La sincronización solo quedará operativa después de crear una cuenta desde la app y aprobarla mediante `dibiser_team_members`.
+- Registro inicial: en la app pulsa «Crear mi cuenta de DIBISER», proporciona correo y contraseña personales y confirma el mensaje recibido. El propietario debe autorizar ese usuario, por ejemplo insertando desde SQL Editor su `auth.users.id` en `public.dibiser_team_members`.
+- Nunca compartir la contraseña con ChatGPT, en GitHub ni con otros operarios. Respalda primero los registros locales de cada celular y luego importa desde cada dispositivo.
+- No habilites acceso indiscriminado a la tabla de movimientos, ni desactives RLS.
+
 # DIBISER | Historial compartido entre celulares (v35)
 **Estado:** integración preparada; no está activada hasta conectar un proyecto Supabase real y aplicar el SQL.
 
