@@ -38,7 +38,7 @@ saveCats();
 const dbp=new Promise((resolve,reject)=>{const req=indexedDB.open('dibiser_almacen_v1',1);req.onupgradeneeded=()=>req.result.createObjectStore('movements',{keyPath:'id'});req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
 async function allLocal(){const db=await dbp;return new Promise((res,rej)=>{let r=db.transaction('movements').objectStore('movements').getAll();r.onsuccess=()=>res(r.result.sort((a,b)=>b.iso.localeCompare(a.iso)));r.onerror=()=>rej(r.error)})}
 async function putLocal(r){const db=await dbp;return new Promise((res,rej)=>{let t=db.transaction('movements','readwrite');t.objectStore('movements').put(r);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
-async function all(){return window.DibiserCloud?.connected()?window.DibiserCloud.all():allLocal()}
+async function all(){const local=await allLocal();if(!window.DibiserCloud?.connected())return local;const remote=await window.DibiserCloud.all();const merged=new Map(local.map(r=>[r.id,r]));for(const r of remote)merged.set(r.id,r);return [...merged.values()].sort((a,b)=>String(b.iso).localeCompare(String(a.iso)))}
 async function updateMovement(record,previousVersion){
  if(window.DibiserCloud?.connected()){
    const saved=await window.DibiserCloud.update(record,previousVersion);
@@ -305,6 +305,64 @@ renderCatalog();
 
 /* Panel de conexión central: sin activación automática ni pérdida de los datos locales. */
 const cloud=window.DibiserCloud;
+let recoveryActive=false,recoveryDone=false,recoveryFound=0;
+async function checkLocalRecovery(){
+ try{
+  const local=await allLocal();
+  recoveryFound=local.length;
+  $('recoveryStatus').textContent=local.length?
+   'Se encontraron '+local.length+' movimientos anteriores en este dispositivo. Se conservan y se mostrarán junto al historial central.':
+   'No se encontraron movimientos en el almacenamiento de este navegador. Los de otra instalación o navegador pueden estar allí.';
+  $('recoveryBackup').disabled=!local.length;
+  $('recoverySync').disabled=!local.length||!cloud.status().authorized;
+  return local;
+ }catch(e){
+  $('recoveryStatus').textContent='No se pudo leer el historial de este navegador: '+e.message;
+  $('recoveryBackup').disabled=true;$('recoverySync').disabled=true;
+  return [];
+ }
+}
+$('recoveryBackup').onclick=async()=>{
+ const local=await allLocal();
+ if(!local.length)return alert('Este navegador no contiene movimientos locales. Abre la instalación donde registrabas los movimientos.');
+ download('DIBISER_RECUPERACION_LOCAL_'+today()+'.json',new Blob([JSON.stringify({version:4,exportedAt:new Date().toISOString(),records:local,catalogs,capacidades})],{type:'application/json'}));
+ AppMotion.notify('Respaldo local creado. Conserva el archivo JSON.');
+};
+async function recuperarHistorialAutomatico(){
+ if(recoveryActive||!cloud.status().authorized)return;
+ recoveryActive=true;
+ try{
+  const local=await checkLocalRecovery();
+  const remote=await cloud.all(true);
+  const ids=new Set(remote.map(r=>r.id));
+  const pending=local.filter(r=>r.id&&r.iso&&!ids.has(r.id));
+  if(!pending.length){
+   recoveryDone=true;
+   $('recoveryStatus').textContent='Historial revisado: '+local.length+' movimientos locales; '+remote.length+' en base central. No hay pendientes de subir.';
+   return;
+  }
+  $('recoveryStatus').textContent='Recuperando '+pending.length+' movimientos del celular hacia la base central. No se eliminarán los originales...';
+  let done=0;
+  for(const row of pending){
+    await cloud.save(row,null,true);
+    done++;
+    $('recoveryStatus').textContent='Recuperación: '+done+' de '+pending.length+' movimientos sincronizados. Originales conservados.';
+  }
+  recoveryDone=true;
+  await cloud.all(true);
+  await renderHistory();
+  $('recoveryStatus').textContent='Recuperación completada: '+done+' movimientos anteriores enviados a la nube, con fotografías. Los originales permanecen en este celular.';
+  AppMotion.notify('Recuperados '+done+' movimientos en la base compartida.');
+ }catch(err){
+  recoveryDone=false;
+  $('recoveryStatus').textContent='Recuperación parcial o pendiente: '+err.message+' Los registros locales se conservan. Usa Recuperar y sincronizar ahora.';
+ }finally{
+  recoveryActive=false;
+  $('recoverySync').disabled=!cloud.status().authorized;
+ }
+}
+$('recoverySync').onclick=()=>recuperarHistorialAutomatico();
+checkLocalRecovery();
 function cloudStatusRender(message){
  const s=cloud.status();
  const label=s.linkMode?(s.authorized?'Enlace privado validado: todos los celulares autorizados comparten el mismo historial.':'Verificando acceso privado de DIBISER...')
@@ -315,6 +373,7 @@ function cloudStatusRender(message){
  $('cloudHelp').classList.toggle('hidden',s.linkMode&&s.authorized);
  $('cloudHelp').textContent=s.linkMode?'Comparte únicamente el enlace privado de DIBISER. No publiques el enlace ni lo reenvíes a personas no autorizadas.':'Para entrar, abre el enlace privado que te envió DIBISER. No se necesita correo ni contraseña.';
  $('cloudImport').disabled=!s.authorized;
+ $('recoverySync').disabled=!s.authorized||!recoveryFound||recoveryActive;
  $('cloudRefresh').disabled=!s.authorized;
  $('cloudLogout').disabled=!s.connected;
  $('cloudLogout').textContent=s.linkMode?'Quitar acceso de este celular':'Cerrar sesión';
@@ -335,6 +394,7 @@ async function cloudRefresh(){
  if(!cloud.connected())return;
  if(!await cloud.member()){cloudStatusRender('El enlace privado no es válido o fue revocado. Solicita uno nuevo a DIBISER.');return;}
  await cloud.all(true);await cloudPullCatalogs();
+ if(!recoveryDone)await recuperarHistorialAutomatico();
  if(!$('history').classList.contains('hidden'))await renderHistory();
  if(!$('report').classList.contains('hidden'))await renderReport();
  await mostrarGuiaAutomatica();
@@ -387,6 +447,7 @@ $('cloudImport').onclick=async()=>{
  finally{b.disabled=false;cloudStatusRender()}
 };
 cloudStatusRender();
+checkLocalRecovery();
 if(cloud.connected())cloud.member().then(ok=>ok?cloudRefresh():cloudStatusRender('Enlace privado inválido o revocado.')).catch(e=>cloudStatusRender('No se pudo verificar el enlace privado: '+e.message));
 setInterval(()=>{if(cloud.connected()&&!document.hidden)cloudRefresh().catch(e=>cloudStatusRender('Sin conexión central: '+e.message));},20000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&cloud.connected())cloudRefresh().catch(e=>cloudStatusRender('Sin conexión central: '+e.message));});
