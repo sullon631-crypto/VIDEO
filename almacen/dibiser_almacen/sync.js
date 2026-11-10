@@ -6,6 +6,15 @@ const cloud=window.DibiserCloud;
 const el=id=>document.getElementById(id);
 let busy=false,scheduled=false,lastError='',synced=0,conflicts=0;
 const setStatus=s=>{if(el('sharedStatus'))el('sharedStatus').textContent=s;};
+let wasAuthorized=false;
+function updateAccessLayout(authorized){
+ if(authorized)wasAuthorized=true;
+ // Un corte temporal de internet no debe volver a ocupar la pantalla con el panel.
+ const compact=!!authorized||wasAuthorized&&!!cloud.connected();
+ el('sharedPanel').classList.toggle('hidden',compact);
+ el('localStorageNotice').classList.toggle('hidden',compact);
+ el('sharedRefresh').classList.toggle('hidden',!compact);
+}
 async function storeRows(name){
  const db=await dbp;
  return new Promise((resolve,reject)=>{
@@ -40,13 +49,15 @@ async function refresh(){
  try{
   const local=await allLocal();
   if(!cloud.connected()){
+   updateAccessLayout(false);
    setStatus('Solo historial local: '+local.length+' movimientos. Para ver los de otros celulares, conecta este dispositivo con el enlace privado.');
    el('sharedAccess').classList.remove('hidden');
    return;
   }
   let verified=cloud.status().authorized;
   if(!verified)verified=await cloud.member();
-  if(!verified){setStatus('El enlace no está autorizado. Los '+local.length+' movimientos locales se mantienen intactos.');el('sharedAccess').classList.remove('hidden');return;}
+  if(!verified){wasAuthorized=false;updateAccessLayout(false);setStatus('El enlace no está autorizado. Los '+local.length+' movimientos locales se mantienen intactos.');el('sharedAccess').classList.remove('hidden');return;}
+  updateAccessLayout(true);
   el('sharedAccess').classList.add('hidden');
   const rows=await cloud.all(true),remoteById=new Map(rows.map(x=>[x.id,x]));
   const pending=await storeRows('pending_sync'),pendingById=new Map(pending.map(x=>[x.id,x]));
