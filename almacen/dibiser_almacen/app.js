@@ -50,7 +50,7 @@ for(const root of document.querySelectorAll('[data-combo]')){
 async function siguienteGuiaInterna(){
   const prev=[...(catalogs.guias||[]),...(await all()).map(r=>r.guia||'')];
   let max=0;
-  for(const value of prev){const match=/^DIB-INT-(\\d+)$/i.exec(String(value).trim());if(match)max=Math.max(max,Number(match[1]));}
+  for(const value of prev){const match=/^DIB-INT-(\d+)$/i.exec(String(value).trim());if(match)max=Math.max(max,Number(match[1]));}
   return 'DIB-INT-'+String(max+1).padStart(6,'0');
 }
 $('generarGuia').onclick=async()=>{
