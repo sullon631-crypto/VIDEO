@@ -26,12 +26,12 @@ function actualizarCantidadAutomatica(){
  const servicio=$('configTransporte').value==='Trabajo / servicio',cama=$('configTransporte').value==='Con cama baja';
  $('campoModoCantidad').classList.toggle('hidden',servicio||cama);
  if(servicio||cama)return;
- let mode=$('modoCantidad').value;const {plate,cap}=capacidadElegida(),input=$('cantidad');
- if(mode==='auto'&&!cap){$('modoCantidad').value='manual';mode='manual';}
+ const mode=$('modoCantidad').value,{plate,cap}=capacidadElegida(),input=$('cantidad');
  $('infoCapacidad').textContent=cap?'Capacidad registrada de '+plate+': '+cap.cantidad+' '+cap.unidad+' · '+cap.tipo:'Sin capacidad confirmada para '+(plate||'esta unidad')+'. Regístrala en Catálogos > Capacidades o usa metraje manual.';
  if(mode==='viaje'){input.value='1';$('unidad').value='Viaje';input.readOnly=true;}
  else if(mode==='auto'&&cap){input.value=String(cap.cantidad);if(![...$('unidad').options].some(x=>x.value===cap.unidad))$('unidad').add(new Option(cap.unidad,cap.unidad));$('unidad').value=cap.unidad;input.readOnly=true;}
- else {input.readOnly=false;if(mode==='auto'&&!cap){input.value='';}if($('unidad').value==='Viaje')$('unidad').value='m³';}
+ else if(mode==='auto'&&!cap){input.value='';input.readOnly=true;if($('unidad').value==='Viaje')$('unidad').value='m³';}
+ else {input.readOnly=false;if($('unidad').value==='Viaje')$('unidad').value='m³';}
 }
 
 saveCats();
