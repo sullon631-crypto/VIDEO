@@ -306,12 +306,12 @@ renderCatalog();
 /* Panel de conexión central: sin activación automática ni pérdida de los datos locales. */
 const cloud=window.DibiserCloud;
 function cloudStatusRender(message){
- const s=cloud.status(),label=s.connected?'Conectado a base central: '+s.email:s.configured?'Base configurada; INICIA SESIÓN para guardar y ver registros de todos los celulares.':'MODO LOCAL: los movimientos aún NO se comparten entre celulares.';
+ const s=cloud.status(),label=s.connected?(s.authorized?'Conectado a base central: '+s.email:'Cuenta conectada, pendiente de autorización de DIBISER: '+s.email):s.configured?'Base central configurada. Inicia sesión con un usuario autorizado para compartir registros.':'MODO LOCAL: los movimientos aún NO se comparten entre celulares.';
  $('cloudStatus').textContent=message||label;
  $('cloudConfigFields').classList.toggle('hidden',s.configured);
  $('cloudAuthFields').classList.toggle('hidden',s.connected);
- $('cloudImport').disabled=!s.connected;
- $('cloudRefresh').disabled=!s.connected;
+ $('cloudImport').disabled=!s.authorized;
+ $('cloudRefresh').disabled=!s.authorized;
  $('cloudLogout').disabled=!s.connected;
 }
 async function cloudPullCatalogs(){
@@ -331,10 +331,27 @@ async function cloudRefresh(){
  cloudStatusRender();
 }
 $('cloudConfigure').onclick=()=>{try{cloud.setup($('cloudUrl').value,$('cloudKey').value);cloudStatusRender('Configuración guardada. Inicia sesión con un usuario autorizado.');}catch(err){alert(err.message)}};
+$('cloudRegister').onclick=async()=>{
+ const email=$('cloudEmail').value.trim(),password=$('cloudPassword').value;
+ if(!email||password.length<8)return alert('Ingresa un correo válido y una contraseña de al menos 8 caracteres.');
+ const b=$('cloudRegister');b.disabled=true;
+ try{
+   await cloud.signup(email,password);
+   $('cloudPassword').value='';
+   cloudStatusRender('Cuenta solicitada para '+email+'. Revisa tu correo para confirmar el registro. Un administrador de DIBISER deberá autorizarla antes de poder ver o enviar movimientos.');
+   alert('Revisa tu correo para confirmar la cuenta. Luego solicita que DIBISER autorice tu usuario.');
+ }catch(err){alert('No se pudo crear la cuenta: '+err.message)}
+ finally{b.disabled=false;}
+};
 $('cloudLogin').onclick=async()=>{
  const b=$('cloudLogin');b.disabled=true;
  try{
   await cloud.login($('cloudEmail').value.trim(),$('cloudPassword').value);$('cloudPassword').value='';
+  const member=await cloud.member();
+  if(!member){
+   cloudStatusRender('Cuenta iniciada, pero pendiente de autorización de DIBISER. No puedes ver ni guardar movimientos compartidos todavía.');
+   return;
+  }
   await cloudRefresh();cloudStatusRender('Conectado al historial central de DIBISER. Los nuevos registros se guardan en la nube.');
   const count=(await allLocal()).length;
   if(count)AppMotion.notify('Hay '+count+' registros guardados en este celular. Usa «Subir registros locales a la nube» para compartirlos.');
@@ -360,6 +377,6 @@ $('cloudImport').onclick=async()=>{
  finally{b.disabled=false;cloudStatusRender()}
 };
 cloudStatusRender();
-if(cloud.connected())cloudRefresh().catch(e=>cloudStatusRender('Conexión central no disponible: '+e.message));
+if(cloud.connected())cloud.member().then(ok=>ok?cloudRefresh():cloudStatusRender('Cuenta conectada, pendiente de autorización de DIBISER.')).catch(e=>cloudStatusRender('Conexión central no disponible: '+e.message));
 setInterval(()=>{if(cloud.connected()&&!document.hidden)cloudRefresh().catch(e=>cloudStatusRender('Sin conexión central: '+e.message));},20000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&cloud.connected())cloudRefresh().catch(e=>cloudStatusRender('Sin conexión central: '+e.message));});
