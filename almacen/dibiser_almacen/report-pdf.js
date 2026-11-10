@@ -62,7 +62,7 @@ async function buildReportPDF(records, date) {
     const data=[
       ['Código',r.id],
       ['Hora / movimiento',time+' · '+text(r.tipo)],
-      ['Cliente / empresa / destino',r.cliente],
+      ...(r.configTransporte!=='Trabajo / servicio'?[['Cliente / empresa / destino',r.cliente]]:[]),
       ['Conductor / operador',r.conductor],
       ['Placa / serie',r.placa],
       ['Configuración de transporte',r.configTransporte||'Unidad sola'],
@@ -136,12 +136,13 @@ async function buildReportPDF(records, date) {
     heading('Consolidado por cliente / destino');
     const clients=new Map();
     for(const r of rows){
+      if(r.configTransporte==='Trabajo / servicio')continue;
       const key=text(r.cliente)||'Sin cliente';
       const item=clients.get(key)||{name:key,count:0,entries:0,exits:0};
       item.count++;if(r.tipo==='Entrada')item.entries++;if(r.tipo==='Salida')item.exits++;
       clients.set(key,item);
     }
-    await table(['Cliente / empresa / destino','Movimientos','Entradas','Salidas'],
+    if(clients.size)await table(['Cliente / empresa / destino','Movimientos','Entradas','Salidas'],
       [...clients.values()].map(r=>[r.name,r.count,r.entries,r.exits]));
   }
   const pages=doc.getNumberOfPages();
