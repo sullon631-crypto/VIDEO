@@ -57,7 +57,7 @@
     ['Cama baja',r=>r.camaBaja],['Maquinaria transportada',r=>r.maquinariaTransportada],
     ['Trabajo / motivo de salida',r=>r.trabajo],['Cliente / Empresa / Destino',r=>r.cliente],
     ['Conductor / Operador',r=>r.conductor],['Material',r=>r.material],
-    ['Cantidad',r=>Number(r.cantidad)||0],['Unidad de medida',r=>r.unidad],
+    ['Cantidad',r=>r.configTransporte==='Trabajo / servicio'?'':Number(r.cantidad)||0],['Unidad de medida',r=>r.configTransporte==='Trabajo / servicio'?'':r.unidad],
     ['Número de guía',r=>r.guia],['Autorización',r=>r.autorizacion],
     ['Observaciones',r=>r.observaciones],['Responsable',r=>r.responsable],
     ['Fotografía registrada',r=>r.fotos?.length?'Sí':'No']
@@ -68,9 +68,9 @@
     const byConcept=new Map();
     for(const r of sorted){
       const concept=r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:r.trabajo?'Trabajo: '+r.trabajo:r.material||'Sin material';
-      const key=JSON.stringify([r.tipo,concept,r.unidad]);
-      const rec=byConcept.get(key)||{tipo:r.tipo,concept,unidad:r.unidad,n:0,q:0};
-      rec.n++;rec.q+=Number(r.cantidad)||0;byConcept.set(key,rec);
+      const servicio=r.configTransporte==='Trabajo / servicio';const unit=servicio?'—':r.unidad;const key=JSON.stringify([r.tipo,concept,unit]);
+      const rec=byConcept.get(key)||{tipo:r.tipo,concept,unidad:unit,n:0,q:0};
+      rec.n++;if(!servicio)rec.q+=Number(r.cantidad)||0;byConcept.set(key,rec);
     }
     const resumen=[
       ['Fecha del reporte',date],['Movimientos',sorted.length],
@@ -82,7 +82,7 @@
     ];
     const summaryRows=resumen.map(r=>[r[0],r[1],'','','']);
     summaryRows.push(['','','','',''],['Movimiento','Material / maquinaria / trabajo','Unidad','Registros','Cantidad total']);
-    for(const r of byConcept.values())summaryRows.push([r.tipo,r.concept,r.unidad,r.n,r.q]);
+    for(const r of byConcept.values())summaryRows.push([r.tipo,r.concept,r.unidad,r.n,r.unidad==='—'?'—':r.q]);
     const workbook=props+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Movimientos" sheetId="1" r:id="rId1"/><sheet name="Resumen" sheetId="2" r:id="rId2"/></sheets></workbook>';
     const workbookRels=props+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
     const files={
