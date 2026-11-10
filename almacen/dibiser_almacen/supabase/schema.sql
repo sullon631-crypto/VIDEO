@@ -2,6 +2,18 @@
 -- Antes de invitar personal, desactive los registros públicos de Auth
 -- y cree solamente usuarios autorizados.
 create sequence if not exists public.dibiser_guide_seq as bigint start with 1;
+-- Lista de usuarios autorizados. El administrador agrega filas solo para empleados aprobados.
+create table if not exists public.dibiser_team_members(
+ user_id uuid primary key references auth.users(id) on delete cascade,
+ created_at timestamptz not null default now()
+);
+alter table public.dibiser_team_members enable row level security;
+revoke all on public.dibiser_team_members from anon;
+grant select on public.dibiser_team_members to authenticated;
+drop policy if exists dibiser_members_self on public.dibiser_team_members;
+create policy dibiser_members_self on public.dibiser_team_members for select to authenticated
+ using (user_id=(select auth.uid()));
+
 create table if not exists public.dibiser_movements (
  id text primary key,
  guia text not null unique,
@@ -23,10 +35,10 @@ drop policy if exists dibiser_movements_team_read on public.dibiser_movements;
 drop policy if exists dibiser_movements_team_insert on public.dibiser_movements;
 drop policy if exists dibiser_catalog_team_read on public.dibiser_catalog_items;
 drop policy if exists dibiser_catalog_team_insert on public.dibiser_catalog_items;
-create policy dibiser_movements_team_read on public.dibiser_movements for select to authenticated using (auth.uid() is not null);
-create policy dibiser_movements_team_insert on public.dibiser_movements for insert to authenticated with check (auth.uid() is not null);
-create policy dibiser_catalog_team_read on public.dibiser_catalog_items for select to authenticated using (auth.uid() is not null);
-create policy dibiser_catalog_team_insert on public.dibiser_catalog_items for insert to authenticated with check (auth.uid() is not null);
+create policy dibiser_movements_team_read on public.dibiser_movements for select to authenticated using (auth.uid() is not null and exists(select 1 from public.dibiser_team_members where user_id=(select auth.uid())));
+create policy dibiser_movements_team_insert on public.dibiser_movements for insert to authenticated with check (auth.uid() is not null and exists(select 1 from public.dibiser_team_members where user_id=(select auth.uid())));
+create policy dibiser_catalog_team_read on public.dibiser_catalog_items for select to authenticated using (auth.uid() is not null and exists(select 1 from public.dibiser_team_members where user_id=(select auth.uid())));
+create policy dibiser_catalog_team_insert on public.dibiser_catalog_items for insert to authenticated with check (auth.uid() is not null and exists(select 1 from public.dibiser_team_members where user_id=(select auth.uid())));
 
 -- Cada inserción usa una secuencia central; incluso si dos celulares guardan a la vez.
 create or replace function public.dibiser_save_movement(p_record jsonb, p_manual_guia text default null, p_import boolean default false)
@@ -34,13 +46,13 @@ returns jsonb language plpgsql security definer set search_path=public
 as $$
 declare rid text; code text; result jsonb; oldcode text;
 begin
- if auth.uid() is null then raise exception 'Inicia sesión para guardar movimientos'; end if;
+ if auth.uid() is null or not exists(select 1 from public.dibiser_team_members where user_id=auth.uid()) then raise exception 'Usuario no autorizado para DIBISER'; end if;
  rid := nullif(trim(p_record->>'id'),'');
  if rid is null or nullif(trim(p_record->>'iso'),'') is null then raise exception 'Movimiento sin código o fecha'; end if;
  select payload into result from public.dibiser_movements where id=rid;
  if found then return result; end if;
  code := nullif(btrim(p_manual_guia),'');
- if p_import and code is null then code := nullif(btrim(p_record->>'guia'),'');
+ if p_import and code is null then code := nullif(btrim(p_record->>'guia'),''); end if;
  oldcode := code;
  if code is not null and exists(select 1 from public.dibiser_movements where guia=code) then
    if p_import then code:=null; else raise exception 'Ese número de guía ya está registrado'; end if;
@@ -55,16 +67,16 @@ begin
  if p_import and oldcode is not null and oldcode<>code then result:=result || jsonb_build_object('guiaOriginal',oldcode); end if;
  insert into public.dibiser_movements(id,guia,payload) values(rid,code,result);
  return result;
-end $$;
+end; $$;
 create or replace function public.dibiser_preview_guide()
 returns text language plpgsql security definer set search_path=public
 as $$
 declare n bigint;
 begin
- if auth.uid() is null then raise exception 'Inicio de sesión requerido'; end if;
+ if auth.uid() is null or not exists(select 1 from public.dibiser_team_members where user_id=auth.uid()) then raise exception 'Usuario no autorizado para DIBISER'; end if;
  select case when is_called then last_value+1 else last_value end into n from public.dibiser_guide_seq;
  return 'DIB-INT-' || lpad(n::text,6,'0');
-end $$;
+end; $$;
 revoke all on function public.dibiser_save_movement(jsonb,text,boolean) from public,anon;
 revoke all on function public.dibiser_preview_guide() from public,anon;
 grant execute on function public.dibiser_save_movement(jsonb,text,boolean) to authenticated;
@@ -83,13 +95,13 @@ alter table public.dibiser_movement_edits enable row level security;
 revoke all on public.dibiser_movement_edits from anon;
 grant select on public.dibiser_movement_edits to authenticated;
 drop policy if exists dibiser_edits_team_read on public.dibiser_movement_edits;
-create policy dibiser_edits_team_read on public.dibiser_movement_edits for select to authenticated using (auth.uid() is not null);
+create policy dibiser_edits_team_read on public.dibiser_movement_edits for select to authenticated using (auth.uid() is not null and exists(select 1 from public.dibiser_team_members where user_id=(select auth.uid())));
 create or replace function public.dibiser_update_movement(p_id text,p_record jsonb,p_expected_version integer)
 returns jsonb language plpgsql security definer set search_path=public
 as $$
 declare original jsonb; result jsonb; old_version integer;
 begin
- if auth.uid() is null then raise exception 'Inicio de sesión requerido'; end if;
+ if auth.uid() is null or not exists(select 1 from public.dibiser_team_members where user_id=auth.uid()) then raise exception 'Usuario no autorizado para DIBISER'; end if;
  select payload into original from public.dibiser_movements where id=p_id for update;
  if not found then raise exception 'Movimiento no encontrado'; end if;
  old_version:=coalesce((original->>'editVersion')::integer,0);
@@ -106,6 +118,6 @@ begin
  insert into public.dibiser_movement_edits(movement_id,edited_by,old_payload,new_payload)
  values(p_id,auth.uid(),original,result);
  return result;
-end $$;
+end; $$;
 revoke all on function public.dibiser_update_movement(text,jsonb,integer) from public,anon;
 grant execute on function public.dibiser_update_movement(text,jsonb,integer) to authenticated;
