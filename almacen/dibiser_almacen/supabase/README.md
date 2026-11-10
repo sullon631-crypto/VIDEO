@@ -1,3 +1,14 @@
+## Acceso por enlace privado sin correo (v40 · 10/11/2026)
+- Se creó un acceso privado para la app. El enlace lleva un token aleatorio de 256 bits en el fragmento `#acceso=...` y no está escrito en GitHub.
+- El navegador conserva el token localmente para próximas aperturas y elimina el fragmento de la barra tras leerlo; por eso, para compartirlo usa siempre el enlace original.
+- La base Supabase comprueba el token **en cada operación** de lectura, escritura, edición y catálogo. La cuenta de correo no es necesaria para quien tenga el enlace.
+- El enlace puede revocarse en Supabase, marcando `revoked_at = now()` en `dibiser_private.invite_links` para su hash; no es necesario eliminar movimientos. Después de revocarlo, entrega uno nuevo a las personas autorizadas.
+- **Seguridad:** quien tenga el enlace puede leer, crear y editar todos los movimientos. Si alguien reenvía el enlace, el destinatario también podrá acceder. No publiques el enlace privado ni lo incluyas en capturas, código fuente, repositorios ni grupos abiertos.
+- El código y el catálogo inicial incluidos en el repositorio público siguen siendo visibles públicamente; los movimientos, fotografías y datos de la base central están detrás de la comprobación del token.
+- El enlace funciona online. Si el teléfono pierde internet, el guardado en la base central falla visiblemente; no afirmes que el movimiento quedó registrado.
+- La instalación PWA reutiliza el acceso almacenado en el navegador compatible; en dispositivos que aíslan el almacenamiento de la PWA puede ser necesario abrir el enlace privado dentro de esa instalación.
+- Los registros anteriores que solo estén en cada teléfono deben subirse con «Subir registros locales a la nube» tras exportar un respaldo.
+
 ## Estado real — 10 de noviembre de 2026 (v39)
 - Proyecto Supabase creado: **DIBISER - Control de Almacen**, referencia `afkghhioiklvnucwhylz`, región São Paulo, base activa.
 - Ya se instalaron y verificaron tablas de movimientos, catálogos, integrantes autorizados y auditoría de ediciones, con RLS.
