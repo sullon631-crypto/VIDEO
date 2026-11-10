@@ -17,11 +17,50 @@ for(const [plate,cap] of Object.entries(CAP_INICIALES)){if(!capacidades[plate])c
 function guardarCapacidades(){localStorage.setItem(CAP_KEY,JSON.stringify(capacidades));}
 guardarCapacidades();
 saveCats();
-const dbp=new Promise((resolve,reject)=>{const req=indexedDB.open('dibiser_almacen_v1',1);req.onupgradeneeded=()=>req.result.createObjectStore('movements',{keyPath:'id'});req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
+const dbp=new Promise((resolve,reject)=>{
+ const req=indexedDB.open('dibiser_almacen_v1',2);
+ req.onupgradeneeded=()=>{
+  const db=req.result;
+  for(const name of ['movements','pending_sync','shared_cache']){
+   if(!db.objectStoreNames.contains(name))db.createObjectStore(name,{keyPath:'id'});
+  }
+ };
+ req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+});
 async function allLocal(){const db=await dbp;return new Promise((res,rej)=>{let r=db.transaction('movements').objectStore('movements').getAll();r.onsuccess=()=>res(r.result.sort((a,b)=>b.iso.localeCompare(a.iso)));r.onerror=()=>rej(r.error)})}
-async function putLocal(r){const db=await dbp;return new Promise((res,rej)=>{let t=db.transaction('movements','readwrite');t.objectStore('movements').put(r);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
-async function all(){return allLocal()}
-async function put(r){delete r.guiaManual;return putLocal(r)}
+async function putLocal(r){
+ const db=await dbp;
+ return new Promise((res,rej)=>{
+  const tx=db.transaction(['movements','pending_sync'],'readwrite');
+  tx.objectStore('movements').put(r);
+  const q=tx.objectStore('pending_sync'),get=q.get(r.id);
+  get.onsuccess=()=>{
+   const existing=get.result;
+   q.put({id:r.id,baseVersion:existing?.baseVersion??Math.max(0,(Number(r.editVersion)||0)-1),changedAt:new Date().toISOString()});
+  };
+  tx.oncomplete=()=>res(r);tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error||Error('No se pudo guardar en este celular'));
+ });
+}
+async function all(){
+ const local=await allLocal(),db=await dbp;
+ const [shared,pending]=await Promise.all(['shared_cache','pending_sync'].map(name=>new Promise((res,rej)=>{
+  const tx=db.transaction(name,'readonly'),req=tx.objectStore(name).getAll();
+  req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);
+ })));
+ const pendingIds=new Set(pending.map(r=>r.id));
+ const merged=new Map(shared.map(r=>[r.id,r]));
+ for(const row of local){
+  const previous=merged.get(row.id);
+  if(!previous||pendingIds.has(row.id)||(Number(row.editVersion)||0)>(Number(previous.editVersion)||0))merged.set(row.id,row);
+ }
+ return [...merged.values()].sort((x,y)=>String(y.iso||'').localeCompare(String(x.iso||'')));
+}
+async function put(r){
+ delete r.guiaManual;
+ await putLocal(r);
+ window.DibiserSync?.kick();
+ return r;
+}
 function nowLocal(){return new Date().toLocaleString('es-PE',{timeZone:'America/Lima'})}
 function dateKey(iso){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(iso));const part=t=>parts.find(p=>p.type===t).value;return `${part('year')}-${part('month')}-${part('day')}`}
 function today(){return dateKey(new Date().toISOString())}
@@ -30,7 +69,7 @@ function show(tab){
  AppMotion.switchPage($(tab));
  document.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('active',x.dataset.tab===tab);x.setAttribute('aria-current',x.dataset.tab===tab?'page':'false')});
  if(tab==='report')AppMotion.task($(tab),renderReport).catch(AppMotion.error);
- if(tab==='history')AppMotion.task($(tab),renderHistory).catch(AppMotion.error);
+ if(tab==='history'){AppMotion.task($(tab),renderHistory).catch(AppMotion.error);window.DibiserSync?.kick();}
  if(tab==='catalogs')renderCatalog();
 }
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>show(b.dataset.tab));
@@ -188,6 +227,7 @@ $('movementForm').onsubmit=async e=>{e.preventDefault();if(photoProcessing)retur
  submit.disabled=true;const finishEdit=AppMotion.busy(submit);
  try{
   await putLocal(changed);
+  window.DibiserSync?.kick();
   cancelEditing();
   show('history');
   await renderHistory();
@@ -275,7 +315,7 @@ function abrirEdicion(row){
  $('form').scrollIntoView({behavior:'smooth',block:'start'});
 }
 $('cancelarEdicion').onclick=()=>{cancelEditing();show('history')};
-$('historyReload').onclick=()=>AppMotion.task($('history'),renderHistory).catch(AppMotion.error);
+$('historyReload').onclick=()=>{window.DibiserSync?.kick();AppMotion.task($('history'),renderHistory).catch(AppMotion.error);};
 $('historyClearFilters').onclick=()=>{$('search').value='';$('filter').value='Todos';$('from').value='';$('to').value='';AppMotion.task($('history'),renderHistory).catch(AppMotion.error)};
 for(let id of ['search','filter','from','to'])$(id).addEventListener('input',()=>AppMotion.task($('history'),renderHistory).catch(AppMotion.error));
 function renderCatalog(){let k=$('catalogType').value,q=$('catalogSearch').value.toLocaleLowerCase('es');let a=catalogs[k].filter(v=>v.toLocaleLowerCase('es').includes(q));$('catalogList').innerHTML=`<p class="muted">${a.length} de ${catalogs[k].length} registros</p><table>${a.map(v=>`<tr><td>${esc(v)}</td></tr>`).join('')}</table>`}
