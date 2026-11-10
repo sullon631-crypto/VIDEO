@@ -38,7 +38,20 @@ saveCats();
 const dbp=new Promise((resolve,reject)=>{const req=indexedDB.open('dibiser_almacen_v1',1);req.onupgradeneeded=()=>req.result.createObjectStore('movements',{keyPath:'id'});req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
 async function allLocal(){const db=await dbp;return new Promise((res,rej)=>{let r=db.transaction('movements').objectStore('movements').getAll();r.onsuccess=()=>res(r.result.sort((a,b)=>b.iso.localeCompare(a.iso)));r.onerror=()=>rej(r.error)})}
 async function putLocal(r){const db=await dbp;return new Promise((res,rej)=>{let t=db.transaction('movements','readwrite');t.objectStore('movements').put(r);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
-async function all(){const local=await allLocal();if(!window.DibiserCloud?.connected())return local;const remote=await window.DibiserCloud.all();const merged=new Map(local.map(r=>[r.id,r]));for(const r of remote)merged.set(r.id,r);return [...merged.values()].sort((a,b)=>String(b.iso).localeCompare(String(a.iso)))}
+async function all(){
+  const local=await allLocal();
+  if(!window.DibiserCloud?.connected())return local;
+  let remote=[];
+  try{remote=await window.DibiserCloud.all();}
+  catch(error){
+    // Sin internet jamás se oculta el historial guardado en el teléfono.
+    if(local.length){$('recoveryStatus').textContent='Mostrando '+local.length+' movimientos locales. La nube no respondió: '+error.message;return local;}
+    throw error;
+  }
+  const merged=new Map(local.map(r=>[r.id,r]));
+  for(const r of remote)merged.set(r.id,r);
+  return [...merged.values()].sort((x,y)=>String(y.iso).localeCompare(String(x.iso)));
+}
 async function updateMovement(record,previousVersion){
  if(window.DibiserCloud?.connected()){
    const saved=await window.DibiserCloud.update(record,previousVersion);
@@ -306,6 +319,7 @@ renderCatalog();
 /* Panel de conexión central: sin activación automática ni pérdida de los datos locales. */
 const cloud=window.DibiserCloud;
 let recoveryActive=false,recoveryDone=false,recoveryFound=0;
+const recoveryVerifiedIds=new Set();
 async function checkLocalRecovery(){
  try{
   const local=await allLocal();
@@ -338,37 +352,81 @@ $('recoveryBackup').onclick=async()=>{
 async function recuperarHistorialAutomatico(){
  if(recoveryActive||!cloud.status().authorized)return;
  recoveryActive=true;
+ let uploaded=0,duplicates=0,failures=0;
  try{
-  const local=await checkLocalRecovery();
-  const remote=await cloud.all(true);
-  const ids=new Set(remote.map(r=>r.id));
-  const pending=local.filter(r=>r.id&&r.iso&&!ids.has(r.id));
-  if(!pending.length){
-   recoveryDone=true;
-   $('recoveryStatus').textContent='Historial revisado: '+local.length+' movimientos locales; '+remote.length+' en base central. No hay pendientes de subir.';
-   return;
-  }
-  $('recoveryStatus').textContent='Recuperando '+pending.length+' movimientos del celular hacia la base central. No se eliminarán los originales...';
-  let done=0;
-  for(const row of pending){
-    await cloud.save(row,null,true);
-    done++;
-    $('recoveryStatus').textContent='Recuperación: '+done+' de '+pending.length+' movimientos sincronizados. Originales conservados.';
-  }
-  recoveryDone=true;
-  await cloud.all(true);
-  await renderHistory();
-  $('recoveryStatus').textContent='Recuperación completada: '+done+' movimientos anteriores enviados a la nube, con fotografías. Los originales permanecen en este celular.';
-  AppMotion.notify('Recuperados '+done+' movimientos en la base compartida.');
- }catch(err){
-  recoveryDone=false;
-  $('recoveryStatus').textContent='Recuperación parcial o pendiente: '+err.message+' Los registros locales se conservan. Usa Recuperar y sincronizar ahora.';
+   const local=await checkLocalRecovery();
+   if(!local.length){
+     $('recoveryStatus').textContent='No se encontraron registros antiguos en este navegador. Usa «Recuperar desde respaldo JSON» si guardaste una copia, o abre el celular y la instalación originales.';
+     recoveryDone=true;return;
+   }
+   const remote=await cloud.all(true),remoteById=new Map(remote.map(r=>[r.id,r]));
+   const pending=local.filter(r=>r?.id&&r?.iso&&!remoteById.has(r.id));
+   if(!pending.length){
+     recoveryDone=true;
+     $('recoveryStatus').textContent='Verificado: '+local.length+' registros locales, '+remote.length+' en nube. No hay registros pendientes de este celular.';
+     return;
+   }
+   $('recoveryStatus').textContent='Encontrados '+pending.length+' registros antiguos pendientes. Se conservarán todos los originales.';
+   for(const row of pending){
+     try{
+       const result=await cloud.save(row,null,true);
+       if(result?.id!==row.id)throw Error('El servidor no confirmó el identificador '+row.id);
+       uploaded++;recoveryVerifiedIds.add(row.id);
+     }catch(error){
+       failures++;
+       $('recoveryStatus').textContent='Recuperación parcial: '+uploaded+' guardados y '+failures+' pendientes. Último error: '+error.message;
+     }
+   }
+   // Leer de vuelta la base central: un envío no basta para afirmar que se recuperó.
+   const after=await cloud.all(true);
+   const afterIds=new Set(after.map(r=>r.id));
+   const unverified=local.filter(r=>r?.id&&r?.iso&&!afterIds.has(r.id));
+   recoveryDone=unverified.length===0;
+   $('recoveryStatus').textContent=unverified.length===0
+     ? 'Recuperación verificada: '+local.length+' registros de este celular presentes en la base central. Los originales siguen en el teléfono.'
+     : 'Recuperación incompleta: '+(local.length-unverified.length)+' registros locales verificados en la nube; '+unverified.length+' pendientes. Conserva la aplicación y usa Recuperar y sincronizar ahora.';
+   if(!unverified.length)AppMotion.notify('Historial anterior recuperado y verificado en la nube.');
+   if(!$('history').classList.contains('hidden'))await renderHistory();
+ }catch(error){
+   recoveryDone=false;
+   $('recoveryStatus').textContent='La recuperación no terminó: '+error.message+'. No se eliminaron registros. Reintenta cuando tengas conexión.';
  }finally{
-  recoveryActive=false;
-  $('recoverySync').disabled=!cloud.status().authorized;
+   recoveryActive=false;
+   $('recoverySync').disabled=!cloud.status().authorized;
  }
 }
 $('recoverySync').onclick=()=>recuperarHistorialAutomatico();
+$('recoveryFileBtn').onclick=()=>$('recoveryFile').click();
+$('recoveryFile').onchange=async event=>{
+ const file=event.target.files[0];if(!file)return;
+ try{
+   const raw=JSON.parse(await file.text());
+   // Respaldo habitual de DIBISER: records, y a veces localRecords.
+   const candidates=[...(Array.isArray(raw.records)?raw.records:[]),...(Array.isArray(raw.localRecords)?raw.localRecords:[])];
+   if(!candidates.length)throw Error('El archivo no contiene movimientos DIBISER en records/localRecords.');
+   const originals=await allLocal(),existing=new Map(originals.map(row=>[row.id,row]));
+   let added=0;
+   for(const row of candidates){
+     if(!row||typeof row.id!=='string'||typeof row.iso!=='string'||!row.id||!row.iso)continue;
+     if(existing.has(row.id))continue; // Nunca sobreescribir un registro original del celular.
+     await putLocal(row);
+     existing.set(row.id,row);added++;
+   }
+   if(added===0&&existing.size===0)throw Error('No se encontraron movimientos válidos.');
+   if(raw.catalogs&&typeof raw.catalogs==='object')for(const key of Object.keys(INITIAL)){
+     if(Array.isArray(raw.catalogs[key]))catalogs[key]=[...new Set([...(catalogs[key]||[]),...raw.catalogs[key]])];
+   }
+   saveCats();
+   await checkLocalRecovery();
+   recoveryDone=false;
+   $('recoveryStatus').textContent='Archivo revisado: '+candidates.length+' movimientos, '+added+' recuperados localmente sin sobrescribir registros. Verificando envío a la nube...';
+   if(cloud.status().authorized)await recuperarHistorialAutomatico();
+   if(!$('history').classList.contains('hidden'))await renderHistory();
+   if(!cloud.status().authorized)alert('Se recuperaron '+added+' registros en este navegador. Abre el enlace privado para sincronizarlos.');
+ }catch(error){alert('No se pudo recuperar el respaldo: '+error.message)}
+ finally{event.target.value='';}
+};
+
 checkLocalRecovery();
 function cloudStatusRender(message){
  const s=cloud.status();
