@@ -34,7 +34,7 @@ function show(tab){
  if(tab==='catalogs')renderCatalog();
 }
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>show(b.dataset.tab));
-$('reportDate').value=today();setInterval(()=>{$('timestamp').value=nowLocal()},1000);$('timestamp').value=nowLocal();
+$('reportDate').value=today();setInterval(()=>{$('timestamp').value=editingRecord?new Date(editingRecord.iso).toLocaleString('es-PE'):nowLocal()},1000);$('timestamp').value=nowLocal();
 function addCatalog(k,v){v=v.trim();if(!v)return false;if(catalogs[k].some(x=>x.toLocaleLowerCase('es')===v.toLocaleLowerCase('es')))return true;catalogs[k].push(v);catalogs[k].sort((a,b)=>a.localeCompare(b,'es'));saveCats();return true}
 for(const root of document.querySelectorAll('[data-combo]')){
  const k=root.dataset.combo,inp=root.querySelector('input'),menu=root.querySelector('.menu');
@@ -71,6 +71,7 @@ async function mostrarGuiaAutomatica(){
   catch(err){input.value='';console.warn('Error al consultar correlativo de guía:',err)}
 }
 $('modificarGuia').onclick=async()=>{
+  if(editingRecord)return;
   if(!guiaModificada){
     guiaModificada=true;$('guias').readOnly=false;$('guias').setAttribute('aria-readonly','false');
     $('modificarGuia').textContent='Automático';
@@ -175,7 +176,27 @@ $('capturePhoto').onclick=()=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&cameraStream)closeCamera()});
 window.addEventListener('pagehide',stopCamera);
 
-$('movementForm').onsubmit=async e=>{e.preventDefault();if(photoProcessing)return AppMotion.notify('Espera a que termine de procesarse la fotografía.');const submit=$('movementForm').querySelector('[type=submit]');if(submit.disabled)return;let fields=['conductores','placas','responsables'];if($('configTransporte').value!=='Trabajo / servicio')fields.push('clientes');if($('configTransporte').value==='Trabajo / servicio'&&$('tipo').value==='Salida')fields.push('trabajos');if($('configTransporte').value==='Con cama baja')fields.push('maquinarias');else if($('configTransporte').value!=='Trabajo / servicio')fields.push('materiales');if($('configTransporte').value==='Con carreta')fields.push('carretas');if($('configTransporte').value==='Con cama baja')fields.push('camasBajas');for(let k of fields){let v=$(k).value.trim();if(!catalogs[k].some(x=>x.toLocaleLowerCase('es')===v.toLocaleLowerCase('es'))){alert('Selecciona un elemento de '+k+' o agrégalo con el botón ＋.');$(k).focus();return}}const esServicio=$('configTransporte').value==='Trabajo / servicio';if(esServicio&&$('tipo').value!=='Salida')return alert('Trabajo / servicio solo puede registrarse como salida.');let qty=esServicio?null:Number($('cantidad').value);if(!esServicio&&(!Number.isFinite(qty)||qty<0||$('cantidad').value.trim()===''))return alert('Cantidad inválida');if($('autorizacion').value==='Pendiente'&&!confirm('El movimiento está pendiente de autorización. ¿Guardar de todos modos?'))return;let iso=new Date().toISOString(),r={id:'MOV-'+Date.now()+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),iso,tipo:$('tipo').value,cliente:esServicio?'':$('clientes').value,conductor:$('conductores').value,placa:$('placas').value,configTransporte:$('configTransporte').value,carreta:$('configTransporte').value==='Con carreta'?$('carretas').value:'',camaBaja:$('configTransporte').value==='Con cama baja'?$('camasBajas').value:'',material:['Con cama baja','Trabajo / servicio'].includes($('configTransporte').value)?'':$('materiales').value,maquinariaTransportada:$('configTransporte').value==='Con cama baja'?$('maquinarias').value:'',trabajo:$('configTransporte').value==='Trabajo / servicio'&&$('tipo').value==='Salida'?$('trabajos').value.trim():'',cantidad:qty,unidad:esServicio?'':$('unidad').value,guia:guiaModificada?$('guias').value.trim():'',guiaManual:guiaModificada&&!!$('guias').value.trim(),autorizacion:$('autorizacion').value,observaciones:$('observaciones').value,responsable:$('responsables').value,fotos:photoData.slice(0,MAX_PHOTOS)};submit.disabled=true;const finish=AppMotion.busy(submit);try{if(!guiaModificada||!r.guia)r.guia=await siguienteGuiaInterna();await put(r);addCatalog('guias',r.guia);guiaModificada=false;$('movementForm').reset();await mostrarGuiaAutomatica();$('responsables').value='LUIS FELIPE ABAD QUINDE';actualizarTransporte();actualizarTrabajo();photoData=[];renderPhotoPreview();$('msg').textContent=' ✓ Guardado: '+r.id;AppMotion.notify('Movimiento guardado correctamente.');$('timestamp').value=nowLocal()}catch(err){alert('No se pudo guardar. Verifica el espacio del navegador: '+err.message)}finally{finish();submit.disabled=false}};
+$('movementForm').onsubmit=async e=>{e.preventDefault();if(photoProcessing)return AppMotion.notify('Espera a que termine de procesarse la fotografía.');const submit=$('movementForm').querySelector('[type=submit]');if(submit.disabled)return;let fields=['conductores','placas','responsables'];if($('configTransporte').value!=='Trabajo / servicio')fields.push('clientes');if($('configTransporte').value==='Trabajo / servicio'&&$('tipo').value==='Salida')fields.push('trabajos');if($('configTransporte').value==='Con cama baja')fields.push('maquinarias');else if($('configTransporte').value!=='Trabajo / servicio')fields.push('materiales');if($('configTransporte').value==='Con carreta')fields.push('carretas');if($('configTransporte').value==='Con cama baja')fields.push('camasBajas');for(let k of fields){let v=$(k).value.trim();if(!catalogs[k].some(x=>x.toLocaleLowerCase('es')===v.toLocaleLowerCase('es'))){alert('Selecciona un elemento de '+k+' o agrégalo con el botón ＋.');$(k).focus();return}}const esServicio=$('configTransporte').value==='Trabajo / servicio';if(esServicio&&$('tipo').value!=='Salida')return alert('Trabajo / servicio solo puede registrarse como salida.');let qty=esServicio?null:Number($('cantidad').value);if(!esServicio&&(!Number.isFinite(qty)||qty<0||$('cantidad').value.trim()===''))return alert('Cantidad inválida');if($('autorizacion').value==='Pendiente'&&!confirm('El movimiento está pendiente de autorización. ¿Guardar de todos modos?'))return;let iso=new Date().toISOString(),r={id:'MOV-'+Date.now()+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),iso,tipo:$('tipo').value,cliente:esServicio?'':$('clientes').value,conductor:$('conductores').value,placa:$('placas').value,configTransporte:$('configTransporte').value,carreta:$('configTransporte').value==='Con carreta'?$('carretas').value:'',camaBaja:$('configTransporte').value==='Con cama baja'?$('camasBajas').value:'',material:['Con cama baja','Trabajo / servicio'].includes($('configTransporte').value)?'':$('materiales').value,maquinariaTransportada:$('configTransporte').value==='Con cama baja'?$('maquinarias').value:'',trabajo:$('configTransporte').value==='Trabajo / servicio'&&$('tipo').value==='Salida'?$('trabajos').value.trim():'',cantidad:qty,unidad:esServicio?'':$('unidad').value,guia:guiaModificada?$('guias').value.trim():'',guiaManual:guiaModificada&&!!$('guias').value.trim(),autorizacion:$('autorizacion').value,observaciones:$('observaciones').value,responsable:$('responsables').value,fotos:photoData.slice(0,MAX_PHOTOS)};if(editingRecord){
+ const original=editingRecord;
+ const existing=(await allLocal()).find(x=>x.id===original.id);
+ if(!existing)return alert('No se encontró el registro original en este celular.');
+ if(String(existing.editedAt||'')!==String(original.editedAt||''))return alert('Este movimiento fue modificado. Vuelve a abrirlo desde el historial.');
+ if(!confirm('¿Guardar las correcciones de este movimiento? No se modificará su código, guía ni fecha original.'))return;
+ const changed={...existing,...r,id:existing.id,iso:existing.iso,guia:existing.guia,
+  guiaManual:undefined,editVersion:(Number(existing.editVersion)||0)+1,editedAt:new Date().toISOString()};
+ delete changed.guiaManual;
+ submit.disabled=true;const finishEdit=AppMotion.busy(submit);
+ try{
+  await putLocal(changed);
+  cancelEditing();
+  show('history');
+  await renderHistory();
+  detail(changed);
+  AppMotion.notify('Movimiento actualizado en este celular.');
+ }catch(err){alert('No se pudo editar el registro: '+err.message)}
+ finally{finishEdit();submit.disabled=false}
+ return;
+}submit.disabled=true;const finish=AppMotion.busy(submit);try{if(!guiaModificada||!r.guia)r.guia=await siguienteGuiaInterna();await put(r);addCatalog('guias',r.guia);guiaModificada=false;$('movementForm').reset();await mostrarGuiaAutomatica();$('responsables').value='LUIS FELIPE ABAD QUINDE';actualizarTransporte();actualizarTrabajo();photoData=[];renderPhotoPreview();$('msg').textContent=' ✓ Guardado: '+r.id;AppMotion.notify('Movimiento guardado correctamente.');$('timestamp').value=nowLocal()}catch(err){alert('No se pudo guardar. Verifica el espacio del navegador: '+err.message)}finally{finish();submit.disabled=false}};
 function rowsFor(r){return `<tr><td>${esc(new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit'}))}</td><td>${esc(r.placa)}${r.carreta?'<br>Carreta: '+esc(r.carreta):''}${r.camaBaja?'<br>Cama baja: '+esc(r.camaBaja):''}</td><td>${esc(r.tipo)}</td><td>${esc(r.cliente)}</td><td>${esc(r.conductor)}</td><td>${esc(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:r.material))}</td><td>${r.configTransporte==='Trabajo / servicio'?'—':esc(r.cantidad)+' '+esc(r.unidad)}</td><td>${esc(r.guia)}</td></tr>`}
 async function renderReport(){let date=$('reportDate').value,rr=(await all()).filter(r=>dateKey(r.iso)===date);$('printedDate').textContent=date.split('-').reverse().join('/');$('total').textContent=rr.length;$('entries').textContent=rr.filter(r=>r.tipo==='Entrada').length;$('exits').textContent=rr.filter(r=>r.tipo==='Salida').length;$('volume').textContent=rr.filter(r=>r.unidad==='m³').reduce((s,r)=>s+(Number(r.cantidad)||0),0).toLocaleString('es-PE');$('reportRows').innerHTML=rr.map(rowsFor).join('')||'<tr><td colspan="8">Sin movimientos para esta fecha</td></tr>';let sums={};for(let r of rr){let concept=r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:(r.material||'Sin material'));let k=r.tipo+' · '+concept+(r.configTransporte==='Trabajo / servicio'?'':' ('+r.unidad+')');sums[k]=(sums[k]||0)+(r.configTransporte==='Trabajo / servicio'?1:Number(r.cantidad||0))}$('totalsByMaterial').innerHTML=Object.entries(sums).map(([k,v])=>`<div>${esc(k)}: <b>${esc(v)}</b></div>`).join('')||'<p class="muted">Sin materiales</p>';$('reportPhotos').innerHTML=rr.filter(r=>r.fotos?.length).map(r=>`<div style="break-inside:avoid;margin:12px 0"><b>${esc(r.id)} · ${esc(r.placa)} · ${esc(r.cliente)}</b><div class="photo">${r.fotos.map(s=>`<img src="${s}" alt="Evidencia">`).join('')}</div></div>`).join('')||'<p class="muted">Sin fotografías</p>'}
 $('reportDate').onchange=()=>AppMotion.task($('report'),renderReport).catch(AppMotion.error);
@@ -197,61 +218,63 @@ async function renderHistory(){
 function detail(r){$('detail').innerHTML=`<div class="card" style="margin-top:16px"><h3>Detalle ${esc(r.id)}</h3><p><b>Fecha:</b> ${esc(new Date(r.iso).toLocaleString('es-PE'))} · <b>Movimiento:</b> ${esc(r.tipo)} · <b>Placa:</b> ${esc(r.placa)}</p><p><b>Cliente:</b> ${esc(r.cliente)} · <b>Conductor:</b> ${esc(r.conductor)}</p><p><b>Configuración:</b> ${esc(r.configTransporte||'Unidad sola')} · <b>Carreta:</b> ${esc(r.carreta||'No aplica')} · <b>Cama baja:</b> ${esc(r.camaBaja||'No aplica')}</p><p><b>${r.maquinariaTransportada?'Maquinaria transportada':'Material'}:</b> ${esc(r.maquinariaTransportada||r.material)} · <b>Cantidad:</b> ${r.configTransporte==='Trabajo / servicio'?'No aplica':esc(r.cantidad)+' '+esc(r.unidad)} · <b>Guía:</b> ${esc(r.guia)}</p><p><b>Trabajo / motivo de salida:</b> ${esc(r.trabajo||'No especificado')}</p><p><b>Autorización:</b> ${esc(r.autorizacion)} · <b>Responsable:</b> ${esc(r.responsable)}</p><p><b>Observaciones:</b> ${esc(r.observaciones)}</p><div class="photo">${(r.fotos||[]).map(s=>`<a href="${s}" target="_blank"><img alt="Foto" src="${s}"></a>`).join('')}</div></div>`;}
 
 let editingRecord=null;
-const editMap=["tipo","configTransporte","placa","conductor","cliente","carreta","camaBaja","maquinariaTransportada","material","trabajo","cantidad","unidad","autorizacion","responsable","observaciones"];
+function cancelEditing(){
+ editingRecord=null;
+ $('movementForm').reset();
+ photoData=[];renderPhotoPreview();
+ guiaModificada=false;
+ $('modificarGuia').disabled=false;
+ $('movementFormTitle').textContent='Nuevo movimiento';
+ $('movementFormIntro').textContent='Registra el ingreso o salida de vehículos y materiales del almacén.';
+ $('saveMovementButton').textContent='Guardar movimiento';
+ $('editingNotice').classList.add('hidden');
+ $('msg').textContent='';
+ $('responsables').value='LUIS FELIPE ABAD QUINDE';
+ actualizarTransporte();
+ mostrarGuiaAutomatica();
+}
 function abrirEdicion(row){
  if(!row)return;
  editingRecord={...row};
- for(const key of editMap){
-  const el=$('edit_'+key),value=row[key]??'';
-  if(el.tagName==='SELECT'&&value&&![...el.options].some(x=>x.value===String(value)))el.add(new Option(String(value),String(value)));
-  el.value=value;
+ $('movementForm').reset();
+ $('tipo').value=row.tipo||'Salida';
+ $('configTransporte').value=row.configTransporte||'Unidad sola';
+ // Mostrar la misma estructura condicional que utiliza el registro nuevo.
+ actualizarTransporte();
+ const loaded={
+  clientes:row.cliente,conductores:row.conductor,placas:row.placa,
+  carretas:row.carreta,camasBajas:row.camaBaja,materiales:row.material,
+  maquinarias:row.maquinariaTransportada,trabajos:row.trabajo,
+  responsables:row.responsable
+ };
+ for(const [name,value] of Object.entries(loaded)){
+   const v=String(value??'');
+   if(v&&catalogs[name]&&!catalogs[name].includes(v))addCatalog(name,v);
+   $(name).value=v;
  }
- $('editFoto').value='';
- $('editInfo').textContent='Movimiento '+row.id+' · Guía '+(row.guia||'sin guía')+'. Se conservan el código, fecha y número de guía.';
- $('editPanel').classList.remove('hidden');
- $('editPanel').scrollIntoView({behavior:'smooth',block:'start'});
+ $('cantidad').value=row.cantidad??'';
+ if(row.unidad&&![...$('unidad').options].some(o=>o.value===String(row.unidad)))$('unidad').add(new Option(String(row.unidad),String(row.unidad)));
+ $('unidad').value=row.unidad||'m³';
+ if(row.autorizacion&&![...$('autorizacion').options].some(o=>o.value===String(row.autorizacion)))$('autorizacion').add(new Option(String(row.autorizacion),String(row.autorizacion)));
+ $('autorizacion').value=row.autorizacion||'Autorizado';
+ $('observaciones').value=row.observaciones||'';
+ photoData=(row.fotos||[]).slice(0,MAX_PHOTOS);
+ renderPhotoPreview();
+ guiaModificada=false;
+ $('guias').value=row.guia||'';
+ $('guias').readOnly=true;
+ $('modificarGuia').disabled=true;
+ $('modificarGuia').textContent='Modificar';
+ $('movementFormTitle').textContent='Editar movimiento';
+ $('movementFormIntro').textContent='Los datos del movimiento seleccionado están cargados. Corrige lo necesario y guarda los cambios.';
+ $('saveMovementButton').textContent='Guardar cambios';
+ $('editingNoticeInfo').textContent='Código: '+row.id+' · Guía: '+(row.guia||'sin guía')+' · Fecha original: '+new Date(row.iso).toLocaleString('es-PE')+'. Estos datos no se cambiarán.';
+ $('editingNotice').classList.remove('hidden');
+ $('msg').textContent='';
+ show('form');
+ $('form').scrollIntoView({behavior:'smooth',block:'start'});
 }
-$('cancelarEdicion').onclick=()=>{editingRecord=null;$('editPanel').classList.add('hidden')};
-$('editForm').onsubmit=async event=>{
- event.preventDefault();if(!editingRecord)return;
- const button=$('editForm').querySelector('[type="submit"]');if(button.disabled)return;
- const updated={...editingRecord};
- for(const key of editMap)updated[key]=String($('edit_'+key).value??'').trim();
- if(!updated.placa||!updated.conductor)return alert('Placa y conductor son obligatorios.');
- if(updated.configTransporte==='Trabajo / servicio'){
-  if(updated.tipo!=='Salida'||!updated.trabajo)return alert('Trabajo / servicio necesita un motivo y solo admite salida.');
-  Object.assign(updated,{cliente:'',material:'',carreta:'',camaBaja:'',maquinariaTransportada:'',cantidad:null,unidad:''});
- }else if(updated.configTransporte==='Con cama baja'){
-  if(!updated.camaBaja||!updated.maquinariaTransportada)return alert('Completa cama baja y maquinaria.');
-  updated.material='';updated.trabajo='';updated.carreta='';
-  updated.cantidad=Number(updated.cantidad);
-  if(!(updated.cantidad>0))return alert('Cantidad inválida.');
- }else{
-  if(!updated.cliente||!updated.material)return alert('Completa cliente y material.');
-  if(updated.configTransporte==='Con carreta'&&!updated.carreta)return alert('Completa carreta o tolvón.');
-  updated.cantidad=Number(updated.cantidad);
-  if(!(updated.cantidad>0)||!updated.unidad)return alert('Cantidad o unidad inválida.');
-  if(updated.configTransporte!=='Con carreta')updated.carreta='';
-  updated.camaBaja='';updated.maquinariaTransportada='';updated.trabajo='';
- }
- const photo=$('editFoto').files[0];
- if(photo){try{updated.fotos=[await compress(photo)]}catch(err){return alert('Foto inválida: '+err.message)}}
- if(!confirm('¿Guardar las correcciones de este registro?'))return;
- button.disabled=true;
- try{
-  const current=(await allLocal()).find(x=>x.id===editingRecord.id);
-  if(!current)throw Error('No se encontró el registro en este celular.');
-  if(String(current.editedAt||'')!==String(editingRecord.editedAt||''))throw Error('El registro fue modificado: vuelve a abrirlo.');
-  updated.id=current.id;updated.iso=current.iso;updated.guia=current.guia;
-  updated.fotos=updated.fotos||current.fotos||[];
-  updated.editedAt=new Date().toISOString();updated.editVersion=(Number(current.editVersion)||0)+1;
-  await putLocal(updated);
-  editingRecord=null;$('editPanel').classList.add('hidden');
-  await renderHistory();detail(updated);
-  AppMotion.notify('Movimiento actualizado en este celular.');
- }catch(err){alert('No se pudieron guardar los cambios: '+err.message)}finally{button.disabled=false}
-};
-
+$('cancelarEdicion').onclick=()=>{cancelEditing();show('history')};
 $('historyReload').onclick=()=>AppMotion.task($('history'),renderHistory).catch(AppMotion.error);
 $('historyClearFilters').onclick=()=>{$('search').value='';$('filter').value='Todos';$('from').value='';$('to').value='';AppMotion.task($('history'),renderHistory).catch(AppMotion.error)};
 for(let id of ['search','filter','from','to'])$(id).addEventListener('input',()=>AppMotion.task($('history'),renderHistory).catch(AppMotion.error));
