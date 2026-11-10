@@ -69,7 +69,7 @@ async function buildReportPDF(records, date) {
       ...(r.carreta?[['Carreta / tolvón',r.carreta]]:[]),
       ...(r.camaBaja?[['Cama baja',r.camaBaja]]:[]),
       ...(!r.trabajo?[[r.maquinariaTransportada?'Maquinaria registrada':'Material registrado',r.maquinariaTransportada||r.material||'No registrado']]:[]),
-      ['Cantidad',number(r.cantidad)+' '+text(r.unidad)],
+      ...(r.configTransporte!=='Trabajo / servicio'?[['Cantidad',number(r.cantidad)+' '+text(r.unidad)]]:[]),
       ['Guía de remisión',r.guia||'No registrada'],
       ['Autorización',r.autorizacion||'No registrada'],
       ['Responsable',r.responsable||'No registrado'],
@@ -126,13 +126,13 @@ async function buildReportPDF(records, date) {
     const sums=new Map();
     for(const r of rows){
       const label=r.maquinariaTransportada?'Maquinaria: '+text(r.maquinariaTransportada):(r.trabajo?'Trabajo: '+text(r.trabajo):text(r.material||'Sin material'));
-      const unit=text(r.unidad),type=text(r.tipo);
+      const servicio=r.configTransporte==='Trabajo / servicio';const unit=servicio?'—':text(r.unidad),type=text(r.tipo);
       const key=JSON.stringify([label,unit,type]);
       const item=sums.get(key)||{label,unit,type,count:0,total:0};
-      item.count++;item.total+=Number(r.cantidad)||0;sums.set(key,item);
+      item.count++;if(!servicio)item.total+=Number(r.cantidad)||0;sums.set(key,item);
     }
     await table(['Material / maquinaria / trabajo','Unidad','Movimiento','Registros','Cantidad total'],
-      [...sums.values()].map(r=>[r.label,r.unit,r.type,r.count,number(r.total)]));
+      [...sums.values()].map(r=>[r.label,r.unit,r.type,r.count,r.unit==='—'?'—':number(r.total)]));
     heading('Consolidado por cliente / destino');
     const clients=new Map();
     for(const r of rows){
