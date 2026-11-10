@@ -54,6 +54,8 @@ async function refresh(){
   for(const row of local){
    if(!row?.id||!row?.iso)continue;
    const remote=remoteById.get(row.id),task=pendingById.get(row.id);
+   // Nunca revivir un movimiento previamente eliminado en otro dispositivo.
+   if(remote?.deletedAt&&!row.deletedAt)continue;
    try{
     if(!remote){
      // Los movimientos antiguos también se recuperan, con la misma clave ID.
