@@ -69,8 +69,15 @@ async function refresh(){
       remoteById.set(result.id,result);synced++;
       await acknowledge(row.id,task.changedAt);
      }else if(actual===(Number(row.editVersion)||0)){
-      // Ya existe en la nube; no sobreescribir una edición más reciente del otro celular.
-      await acknowledge(row.id,task.changedAt);
+      // Confirmar que realmente son los mismos datos antes de retirar la tarea.
+      // La guía puede cambiar por conflicto de correlativo, sin alterar el movimiento.
+      const comparable=record=>{
+       const copy={...record};
+       for(const k of ['guia','guiaOriginal','editVersion','editedAt','editedBy'])delete copy[k];
+       return JSON.stringify(Object.entries(copy).sort(([a],[b])=>a.localeCompare(b)));
+      };
+      if(comparable(row)===comparable(remote))await acknowledge(row.id,task.changedAt);
+      else conflicts++;
      }else{conflicts++;}
     }else if((Number(row.editVersion)||0)>(Number(remote.editVersion)||0)){
      // Ediciones realizadas antes de instalar la sincronización. Solo enviar si
