@@ -7,7 +7,7 @@ async function buildReportPDF(records, date) {
     const bytes=new Uint8Array(await response.arrayBuffer());let raw='';for(const byte of bytes)raw+=String.fromCharCode(byte);
     doc.addFileToVFS(`Inter-${weight}.ttf`,btoa(raw));doc.addFont(`Inter-${weight}.ttf`,'Inter',style);
   }
-  const navy=[17,46,70], teal=[7,95,115], margin=14, bottom=192;
+  const navy=[17,46,70], teal=[7,95,115], margin=12, bottom=194;
   const rows=[...records].sort((a,b)=>a.iso.localeCompare(b.iso));
   const text=v=>String(v??'').replace(/\s+/g,' ').trim();
   const number=n=>Number(n||0).toLocaleString('es-PE',{maximumFractionDigits:2});
@@ -37,123 +37,249 @@ async function buildReportPDF(records, date) {
     const scale=Math.min(32/w,23/h);
     logoSize={width:w*scale,height:h*scale};
   }catch(err){console.warn('Logo no disponible para el PDF:',err)}
-  let y=43;
-  function heading(label){if(y>bottom-20){doc.addPage();y=43}doc.setFont('Inter','bold');doc.setFontSize(12);doc.setTextColor(...navy);doc.text(label,margin,y);y+=5}
-  async function table(head,body,widths){
+
+  doc.setProperties({title:'DIBISER - Reporte diario '+date,subject:'Entradas, salidas y consolidado de almacén',author:'DIBISER E.I.R.L.'});
+  const W=297,edge=margin,inner=W-margin*2;
+  let y=41;
+  const bold=(size,color=navy)=>{doc.setFont('Inter','bold');doc.setFontSize(size);doc.setTextColor(...color)};
+  const regular=(size,color=navy)=>{doc.setFont('Inter','normal');doc.setFontSize(size);doc.setTextColor(...color)};
+  const softFold=v=>text(v).toLocaleLowerCase('es-PE').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
+  const upper=v=>text(v).toLocaleUpperCase('es-PE');
+  const isEmpty=v=>['vacio','basio','nada','sin carga','ninguno','sin material','vacia','basia'].includes(softFold(v));
+  function materialName(row){
+    if(row.configTransporte==='Trabajo / servicio')return 'TRABAJO: '+upper(row.trabajo||'SIN ESPECIFICAR');
+    if(row.maquinariaTransportada)return 'MAQUINARIA: '+upper(row.maquinariaTransportada);
+    if(isEmpty(row.material))return 'SIN CARGA / VACÍO';
+    return upper(row.material||'SIN MATERIAL');
+  }
+  function combined(){
+    const materials=new Map(),clients=new Map(),issues=[];
+    for(const r of rows){
+      const label=materialName(r),service=r.configTransporte==='Trabajo / servicio';
+      const unit=service?'—':upper(r.unidad||'UNIDAD');
+      const type=upper(r.tipo||'SIN TIPO');
+      const amount=Number(r.cantidad)||0;
+      const empty=isEmpty(r.material)&&!service&&!r.maquinariaTransportada;
+      if(empty&&amount>0)issues.push({id:r.id,placa:r.placa,value:amount,unit});
+      const key=JSON.stringify([softFold(label),softFold(unit),softFold(type)]);
+      let m=materials.get(key);
+      if(!m){m={label,unit,type,count:0,total:0,review:0,service};materials.set(key,m)}
+      m.count++;
+      if(!service){
+        if(empty&&amount>0)m.review+=amount;
+        else m.total+=amount;
+      }
+      if(!service){
+        const client=upper(r.cliente||'SIN CLIENTE'),ck=softFold(client);
+        let c=clients.get(ck);
+        if(!c){c={name:client,count:0,entries:0,exits:0};clients.set(ck,c)}
+        c.count++;
+        if(r.tipo==='Entrada')c.entries++;
+        if(r.tipo==='Salida')c.exits++;
+      }
+    }
+    const materialRows=[...materials.values()].sort((a,b)=>b.count-a.count||a.label.localeCompare(b.label,'es'));
+    const clientRows=[...clients.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'es'));
+    return {materialRows,clientRows,issues};
+  }
+  const {materialRows,clientRows,issues}=combined();
+  const totalEntries=rows.filter(r=>r.tipo==='Entrada').length;
+  const totalExits=rows.filter(r=>r.tipo==='Salida').length;
+  const photoCount=rows.filter(r=>r.fotos&&r.fotos.length>0).length;
+  const pendingAuth=rows.filter(r=>r.autorizacion==='Pendiente').length;
+  const formatTotal=m=>m.service?'—':m.review>0?(m.total>0?number(m.total)+' + ':'')+'REVISAR '+number(m.review):number(m.total);
+  const summaryFont=9.2;
+
+  function pageHeading(title){
+    bold(13);
+    doc.text(title,margin,y);
+    y+=8;
+  }
+  async function fullTable(title,head,body,columns){
     await AppMotion.yieldPaint();
-    doc.autoTable({startY:y,head:[head],body,margin:{top:43,bottom:20,left:margin,right:margin},theme:'striped',styles:{font:'Inter',fontSize:8,cellPadding:2.5,overflow:'linebreak',textColor:navy,lineColor:[220,227,232],lineWidth:.1},headStyles:{fillColor:navy,textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[245,248,250]},columnStyles:widths||{},rowPageBreak:'avoid'});
-    y=doc.lastAutoTable.finalY+10;
+    if(y>175){doc.addPage();y=41}
+    pageHeading(title);
+    if(!body.length){regular(10);doc.text('Sin datos para este apartado.',margin,y+4);y+=13;return}
+    doc.autoTable({
+      startY:y,
+      head:[head],body,theme:'striped',
+      margin:{left:margin,right:margin,top:42,bottom:20},
+      styles:{font:'Inter',fontSize:9,cellPadding:2.3,overflow:'linebreak',
+       textColor:navy,lineColor:[218,227,233],lineWidth:0.1},
+      headStyles:{fillColor:navy,textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[244,248,250]},
+      columnStyles:columns||{},rowPageBreak:'avoid'
+    });
+    y=doc.lastAutoTable.finalY+9;
   }
-  doc.setProperties({title:`DIBISER - Reporte de movimientos ${date}`,subject:'Control diario de almacén',author:'DIBISER E.I.R.L.'});
-  // PRIMERO: ficha completa por movimiento con su fotografía, cuando exista.
-  heading('Registro detallado de movimientos');
+  function miniTable(title,head,body,x,w){
+    bold(10);
+    doc.text(title,x,y);
+    doc.autoTable({
+      startY:y+4,head:[head],body:body.length?body:[['Sin registros',...head.slice(1).map(()=>'—')]],
+      margin:{left:x,right:W-x-w,top:44,bottom:18},tableWidth:w,theme:'striped',
+      styles:{font:'Inter',fontSize:8.7,cellPadding:2.35,overflow:'linebreak',
+        textColor:navy,lineColor:[223,229,233],lineWidth:.1},
+      headStyles:{fillColor:navy,textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[245,248,250]},
+      rowPageBreak:'avoid'
+    });
+    return doc.lastAutoTable.finalY;
+  }
+  function kpi(label,value,x,w){
+    doc.setFillColor(239,245,248);
+    doc.roundedRect(x,y,w,23,2,2,'F');
+    bold(19,teal);
+    doc.text(String(value),x+4,y+11);
+    regular(8.5);
+    doc.text(label,x+4,y+18);
+  }
+
+  // PÁGINA 1 - resumen ejecutivo y adelanto de los consolidados.
+  pageHeading('Resumen general de la jornada');
+  const gap=5,box=(inner-3*gap)/4;
+  kpi('MOVIMIENTOS',rows.length,margin,box);
+  kpi('ENTRADAS',totalEntries,margin+box+gap,box);
+  kpi('SALIDAS',totalExits,margin+(box+gap)*2,box);
+  kpi('CON FOTOGRAFÍA',photoCount,margin+(box+gap)*3,box);
+  y+=31;
+  regular(9.6);
+  doc.text('Fecha: '+dateLabel+'    |    Autorizaciones pendientes: '+pendingAuth+
+    '    |    Registros disponibles de los dispositivos vinculados',margin,y);
+  y+=9;
+  const leftW=145,rightX=margin+150,rightW=inner-150;
+  const leftEnd=miniTable('Materiales y trabajos más frecuentes',
+    ['Material / trabajo','Registros','Cantidad'],
+    materialRows.slice(0,7).map(m=>[m.label,m.count,formatTotal(m)+(m.service?'':' '+m.unit)]),
+    margin,leftW);
+  const rightEnd=miniTable('Destinos / clientes más frecuentes',
+    ['Cliente / destino','Mov.','E','S'],
+    clientRows.slice(0,7).map(c=>[c.name,c.count,c.entries,c.exits]),rightX,rightW);
+  y=Math.max(leftEnd,rightEnd)+9;
+  if(issues.length){
+    const notice='Revisar '+issues.length+' registro(s) marcados como vacío/sin carga con cantidad mayor a cero. '+
+      'Estas cantidades NO se suman como volumen de material hasta su verificación.';
+    doc.setFillColor(251,247,237);
+    const noticeLines=doc.splitTextToSize(notice,inner-10);
+    const noticeH=Math.max(15,noticeLines.length*4.7+8);
+    if(y+noticeH<bottom){
+      doc.roundedRect(margin,y,inner,noticeH,2,2,'F');
+      regular(9.1,[102,73,32]);
+      doc.text(noticeLines,margin+5,y+6);
+      y+=noticeH+5;
+    }
+  }
+  if(y+13<bottom){
+    regular(8.8,[85,103,117]);
+    doc.text('El detalle íntegro y sus fotografías están a continuación. Los consolidados completos aparecen al final.',margin,y+4);
+  }
   if(!rows.length){
-    doc.setFont('Inter','normal');doc.setFontSize(10);doc.setTextColor(...navy);
-    doc.text('No se registraron movimientos para esta fecha.',margin,y+8);
-    y+=19;
+    y=Math.min(y+18,bottom-10);
+    regular(11);
+    doc.text('No se registraron movimientos para esta fecha.',margin,y);
   }
+
+  // DESPUÉS: fichas con letra legible y fotografía ampliada.
+  if(rows.length){doc.addPage();y=41;pageHeading('Movimientos detallados con evidencia fotográfica')}
   for(let i=0;i<rows.length;i++){
     await AppMotion.yieldPaint();
     const r=rows[i];
-    const time=new Date(r.iso).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false});
-    const hasPhoto=!!r.fotos?.[0];
-    const rightW=hasPhoto?94:0;
-    const contentW=hasPhoto?161:255;
+    const time=new Date(r.iso).toLocaleTimeString('es-PE',{
+      timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hour12:false
+    });
+    const service=r.configTransporte==='Trabajo / servicio';
     const data=[
       ['Código',r.id],
-      ['Hora / movimiento',time+' · '+text(r.tipo)],
-      ...(r.configTransporte!=='Trabajo / servicio'?[['Cliente / empresa / destino',r.cliente]]:[]),
-      ['Conductor / operador',r.conductor],
+      ['Hora',time],
+      ...(!service?[['Cliente / destino',r.cliente]]:[]),
+      ['Conductor',r.conductor],
       ['Placa / serie',r.placa],
-      ['Configuración de transporte',r.configTransporte||'Unidad sola'],
+      ['Transporte',r.configTransporte||'Unidad sola'],
       ...(r.carreta?[['Carreta / tolvón',r.carreta]]:[]),
       ...(r.camaBaja?[['Cama baja',r.camaBaja]]:[]),
-      ...(!r.trabajo?[[r.maquinariaTransportada?'Maquinaria registrada':'Material registrado',r.maquinariaTransportada||r.material||'No registrado']]:[]),
-      ...(r.configTransporte!=='Trabajo / servicio'?[['Cantidad',number(r.cantidad)+' '+text(r.unidad)]]:[]),
-      ['Guía de remisión',r.guia||'No registrada'],
+      ...(r.trabajo?[['Trabajo / motivo',r.trabajo]]:
+       [[r.maquinariaTransportada?'Maquinaria':'Material',r.maquinariaTransportada||r.material||'No registrado']]),
+      ...(!service?[['Cantidad registrada',number(r.cantidad)+' '+text(r.unidad)]]:[]),
+      ['Guía / correlativo interno',r.guia||'No registrado'],
       ['Autorización',r.autorizacion||'No registrada'],
       ['Responsable',r.responsable||'No registrado'],
-      ...(r.trabajo?[['Trabajo / motivo de salida',r.trabajo]]:[]),
-      ['Observaciones / incidencias',r.observaciones||'Sin observaciones']
+      ['Observaciones',r.observaciones||'Sin observaciones']
     ];
-    doc.setFont('Inter','normal');doc.setFontSize(8);
-    const lines=data.flatMap(([label,val])=>doc.splitTextToSize(label+': '+text(val),contentW-8));
-    const lineHeight=4.15;
-    const contentHeight=lines.length*lineHeight+6;
-    const photoHeight=hasPhoto?73:0;
-    const cardH=Math.max(contentHeight,photoHeight)+15;
+    const hasPhoto=!!(r.fotos&&r.fotos[0]),panelW=inner;
+    const rightW=hasPhoto?117:0,detailW=hasPhoto?151:panelW-10;
+    regular(9.7);
+    const fieldLines=[];
+    for(const [name,value] of data){
+      const content=name+': '+text(value);
+      for(const line of doc.splitTextToSize(content,detailW-6))fieldLines.push(line);
+    }
+    const lineHeight=4.42,cardH=Math.max(70,14+fieldLines.length*lineHeight);
     if(y+cardH>bottom){
-      doc.addPage();y=43;heading('Registro detallado de movimientos (continuación)');
+      doc.addPage();y=41;pageHeading('Movimientos detallados (continuación)');
     }
     const cardY=y;
-    doc.setFillColor(244,248,250);
-    doc.roundedRect(margin,cardY,269,cardH,2.5,2.5,'F');
+    doc.setFillColor(245,249,251);
+    doc.roundedRect(margin,cardY,panelW,cardH,2.5,2.5,'F');
     doc.setFillColor(...navy);
-    doc.roundedRect(margin,cardY,269,9,2.5,2.5,'F');
-    doc.rect(margin,cardY+5,269,4,'F');
-    doc.setTextColor(255);doc.setFont('Inter','bold');doc.setFontSize(9);
-    doc.text('MOVIMIENTO '+String(i+1).padStart(3,'0')+'  ·  '+text(r.tipo).toUpperCase(),margin+4,cardY+6);
-    doc.setTextColor(...navy);doc.setFont('Inter','normal');doc.setFontSize(8);
-    let lineY=cardY+13;
-    for(const line of lines){doc.text(line,margin+4,lineY);lineY+=lineHeight;}
+    doc.roundedRect(margin,cardY,panelW,8.7,2,2,'F');
+    doc.rect(margin,cardY+5,panelW,3.7,'F');
+    bold(10.4,[255,255,255]);
+    doc.text('MOVIMIENTO '+String(i+1).padStart(3,'0')+'  ·  '+upper(r.tipo),margin+4,cardY+6.05);
+    regular(9.7);
+    let lineY=cardY+13.2;
+    for(const line of fieldLines){doc.text(line,margin+4,lineY);lineY+=lineHeight;}
     if(hasPhoto){
-      const x=margin+269-rightW+4,photoY=cardY+12,maxW=rightW-9,maxH=61;
-      doc.setDrawColor(216,225,230);doc.rect(x-1,photoY-1,maxW+2,maxH+2);
+      const photoX=margin+panelW-rightW+3,photoY=cardY+10.4;
+      const maxW=rightW-8,maxH=Math.min(55,cardH-13);
+      doc.setDrawColor(210,221,230);
+      doc.rect(photoX-1,photoY-1,maxW+2,maxH+2);
       try{
         const photo=r.fotos[0],info=doc.getImageProperties(photo);
-        const ratio=Math.min(maxW/info.width,maxH/info.height);
-        const w=info.width*ratio,h=info.height*ratio;
-        doc.addImage(photo,info.fileType,x+(maxW-w)/2,photoY+(maxH-h)/2,w,h,undefined,'FAST');
-      }catch{
-        doc.setTextColor(110);doc.text('Fotografía no disponible',x+2,photoY+16);doc.setTextColor(...navy);
+        const fit=Math.min(maxW/info.width,maxH/info.height);
+        const pw=info.width*fit,ph=info.height*fit;
+        doc.addImage(photo,info.fileType,photoX+(maxW-pw)/2,photoY+(maxH-ph)/2,pw,ph,undefined,'FAST');
+      }catch(err){
+        regular(9,[95,105,114]);
+        doc.text('Fotografía no disponible',photoX+2,photoY+18);
       }
-      doc.setFontSize(7);doc.text('Evidencia del movimiento '+(i+1),x,photoY+maxH+5);
+      regular(7.6,[65,83,95]);
+      doc.text('Evidencia fotográfica',photoX,photoY+maxH+3.6);
     }
-    y+=cardH+6;
+    y+=cardH+4.5;
   }
 
-  // DESPUÉS: resumen gerencial y consolidado de todos los registros del día.
-  if(rows.length){doc.addPage();y=43;}
-  heading('Resumen consolidado de la jornada');
-  await table(
-    ['Fecha','Movimientos','Entradas','Salidas','Autorizaciones pendientes','Con fotografía'],
-    [[dateLabel,rows.length,rows.filter(r=>r.tipo==='Entrada').length,
-      rows.filter(r=>r.tipo==='Salida').length,rows.filter(r=>r.autorizacion==='Pendiente').length,
-      rows.filter(r=>r.fotos?.length).length]]
-  );
-  if(rows.length){
-    heading('Consolidado por material, maquinaria y trabajo');
-    const sums=new Map();
-    for(const r of rows){
-      const label=r.maquinariaTransportada?'Maquinaria: '+text(r.maquinariaTransportada):(r.trabajo?'Trabajo: '+text(r.trabajo):text(r.material||'Sin material'));
-      const servicio=r.configTransporte==='Trabajo / servicio';const unit=servicio?'—':text(r.unidad),type=text(r.tipo);
-      const key=JSON.stringify([label,unit,type]);
-      const item=sums.get(key)||{label,unit,type,count:0,total:0};
-      item.count++;if(!servicio)item.total+=Number(r.cantidad)||0;sums.set(key,item);
-    }
-    await table(['Material / maquinaria / trabajo','Unidad','Movimiento','Registros','Cantidad total'],
-      [...sums.values()].map(r=>[r.label,r.unit,r.type,r.count,r.unit==='—'?'—':number(r.total)]));
-    heading('Consolidado por cliente / destino');
-    const clients=new Map();
-    for(const r of rows){
-      if(r.configTransporte==='Trabajo / servicio')continue;
-      const key=text(r.cliente)||'Sin cliente';
-      const item=clients.get(key)||{name:key,count:0,entries:0,exits:0};
-      item.count++;if(r.tipo==='Entrada')item.entries++;if(r.tipo==='Salida')item.exits++;
-      clients.set(key,item);
-    }
-    if(clients.size)await table(['Cliente / empresa / destino','Movimientos','Entradas','Salidas'],
-      [...clients.values()].map(r=>[r.name,r.count,r.entries,r.exits]));
+  // ÚLTIMA SECCIÓN: todos los consolidados, agrupados por nombres equivalentes.
+  if(rows.length){doc.addPage();y=41}
+  await fullTable('Consolidado completo por material, maquinaria y trabajo',
+    ['Material / maquinaria / trabajo','Unidad','Movimiento','Registros','Cantidad total'],
+    materialRows.map(m=>[m.label,m.unit,m.type,m.count,formatTotal(m)]),
+    {0:{cellWidth:147},1:{cellWidth:27},2:{cellWidth:33},3:{cellWidth:26},4:{cellWidth:40}});
+  await fullTable('Consolidado completo por cliente / destino',
+    ['Cliente / empresa / destino','Movimientos','Entradas','Salidas'],
+    clientRows.map(c=>[c.name,c.count,c.entries,c.exits]),
+    {0:{cellWidth:169},1:{cellWidth:39},2:{cellWidth:33},3:{cellWidth:32}});
+  if(issues.length){
+    await fullTable('Registros con cantidad por verificar (sin carga / vacío)',
+      ['Código','Placa','Cantidad registrada','Unidad'],
+      issues.map(r=>[r.id,r.placa,number(r.value),r.unit]),
+      {0:{cellWidth:112},1:{cellWidth:52},2:{cellWidth:65},3:{cellWidth:44}});
   }
   const pages=doc.getNumberOfPages();
   for(let p=1;p<=pages;p++){
-    doc.setPage(p);doc.setFillColor(...navy);doc.rect(0,0,297,3,'F');
-    if(logo && logoSize)doc.addImage(logo,'PNG',margin+(32-logoSize.width)/2,7+(23-logoSize.height)/2,logoSize.width,logoSize.height);
-    doc.setTextColor(...navy);doc.setFont('Inter','bold');doc.setFontSize(16);doc.text('DIBISER E.I.R.L.',52,15);doc.setFontSize(10);doc.text('REPORTE DIARIO DE MOVIMIENTOS DE ALMACÉN',52,22);
-    doc.setFont('Inter','normal');doc.setFontSize(8);doc.text(`Fecha: ${dateLabel}   |   Hora de referencia: Perú (UTC-5)`,52,28);
-    doc.setDrawColor(...teal);doc.line(margin,34,283,34);
-    doc.setDrawColor(210);doc.line(margin,197,283,197);doc.setTextColor(85);doc.setFontSize(7);
-    doc.text(`Control de almacén · Generado: ${generated} (Perú) · Registros de este dispositivo`,margin,202);doc.text(`Página ${p} de ${pages}`,283,202,{align:'right'});
+    doc.setPage(p);
+    doc.setFillColor(...navy);doc.rect(0,0,297,3,'F');
+    if(logo&&logoSize)doc.addImage(logo,'PNG',margin+(32-logoSize.width)/2,7+(23-logoSize.height)/2,logoSize.width,logoSize.height);
+    bold(16);
+    doc.text('DIBISER E.I.R.L.',52,15);
+    bold(10);
+    doc.text('REPORTE DIARIO DE MOVIMIENTOS DE ALMACÉN',52,22);
+    regular(8.5);
+    doc.text('Fecha: '+dateLabel+'   |   Hora de referencia: Perú (UTC-5)',52,28);
+    doc.setDrawColor(...teal);doc.line(margin,34,297-margin,34);
+    doc.setDrawColor(210);doc.line(margin,197,297-margin,197);
+    regular(7.3,[75,88,100]);
+    doc.text('Control de almacén · Generado: '+generated+' (Perú) · Historial disponible local y sincronizado',margin,202);
+    doc.text('Página '+p+' de '+pages,297-margin,202,{align:'right'});
   }
   return doc;
 }
