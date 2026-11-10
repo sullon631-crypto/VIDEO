@@ -79,7 +79,7 @@ function show(tab){
  AppMotion.switchPage($(tab));
  document.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('active',x.dataset.tab===tab);x.setAttribute('aria-current',x.dataset.tab===tab?'page':'false')});
  if(tab==='report')AppMotion.task($(tab),renderReport).catch(AppMotion.error);
- if(tab==='history')AppMotion.task($(tab),renderHistory).catch(AppMotion.error);
+ if(tab==='history')AppMotion.task($(tab),refreshSharedHistory).catch(AppMotion.error);
  if(tab==='catalogs')renderCatalog();
 }
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>show(b.dataset.tab));
@@ -234,7 +234,44 @@ async function renderReport(){let date=$('reportDate').value,rr=(await all()).fi
 $('reportDate').onchange=()=>AppMotion.task($('report'),renderReport).catch(AppMotion.error);
 function download(name,blob){let a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 $('excel').onclick=async()=>{const button=$('excel'),date=$('reportDate').value;if(!date)return AppMotion.notify('Selecciona una fecha para exportar.');if(button.disabled)return;button.disabled=true;const label=button.textContent;button.textContent='Preparando Excel…';try{const rows=(await all()).filter(r=>dateKey(r.iso)===date);if(!window.DibiserExcel?.build)throw Error('Exportador Excel no disponible. Abre la aplicación con conexión y vuelve a intentar.');const file=window.DibiserExcel.build(rows,date);download('DIBISER_movimientos_'+date+'.xlsx',file);AppMotion.notify('Libro Excel descargado con movimientos y resumen.')}catch(err){AppMotion.notify('No se pudo exportar Excel: '+err.message)}finally{button.disabled=false;button.textContent=label}};
-async function renderHistory(){let rr=await all(),q=$('search').value.toLocaleLowerCase('es'),f=$('filter').value,from=$('from').value,to=$('to').value;rr=rr.filter(r=>(f==='Todos'||r.tipo===f)&&(!from||dateKey(r.iso)>=from)&&(!to||dateKey(r.iso)<=to)&&[r.id,r.placa,r.carreta||'',r.camaBaja||'',r.maquinariaTransportada||'',r.trabajo||'',r.cliente,r.conductor,r.material].some(v=>v.toLocaleLowerCase('es').includes(q)));$('historyRows').innerHTML=rr.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(new Date(r.iso).toLocaleString('es-PE'))}</td><td>${esc(r.tipo)}</td><td>${esc(r.placa)}</td><td>${esc(r.cliente)}</td><td>${esc(r.conductor)}</td><td>${esc(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:r.material))}</td><td>${r.configTransporte==='Trabajo / servicio'?'—':esc(r.cantidad)+' '+esc(r.unidad)}</td><td><button class="view" data-id="${esc(r.id)}">Ver</button> <button class="edit" data-id="${esc(r.id)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="9">No se encontraron movimientos</td></tr>';document.querySelectorAll('.view').forEach(b=>b.onclick=()=>detail(rr.find(r=>r.id===b.dataset.id)));document.querySelectorAll('.edit').forEach(b=>b.onclick=()=>abrirEdicion(rr.find(r=>r.id===b.dataset.id)))}
+async function renderHistory(){
+ const rrAll=await all();
+ const q=$('search').value.trim().toLocaleLowerCase('es');
+ const f=$('filter').value,from=$('from').value,to=$('to').value;
+ const rr=rrAll.filter(r=>{
+  if((f!=='Todos'&&r.tipo!==f)|| (from&&dateKey(r.iso)<from)||(to&&dateKey(r.iso)>to))return false;
+  return [r.id,r.guia,r.placa,r.carreta,r.camaBaja,r.maquinariaTransportada,r.trabajo,r.cliente,r.conductor,r.material].some(v=>String(v??'').toLocaleLowerCase('es').includes(q));
+ });
+ $('historyRows').innerHTML=rr.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(new Date(r.iso).toLocaleString('es-PE'))}</td><td>${esc(r.tipo)}</td><td>${esc(r.placa)}</td><td>${esc(r.cliente)}</td><td>${esc(r.conductor)}</td><td>${esc(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:r.material))}</td><td>${r.configTransporte==='Trabajo / servicio'?'—':esc(r.cantidad)+' '+esc(r.unidad)}</td><td><button class="view" data-id="${esc(r.id)}">Ver</button> <button class="edit" data-id="${esc(r.id)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="9">No se encontraron movimientos con los filtros actuales.</td></tr>';
+ document.querySelectorAll('.view').forEach(b=>b.onclick=()=>detail(rr.find(r=>r.id===b.dataset.id)));
+ document.querySelectorAll('.edit').forEach(b=>b.onclick=()=>abrirEdicion(rr.find(r=>r.id===b.dataset.id)));
+ $('historySyncStatus').textContent='Mostrando '+rr.length+' de '+rrAll.length+' movimientos. '+($('historySyncStatus').dataset.cloudInfo||'');
+}
+async function refreshSharedHistory(){
+ const b=$('historyReload');if(b.disabled)return;b.disabled=true;
+ $('historySyncStatus').textContent='Consultando los movimientos guardados por todos los celulares...';
+ try{
+  const local=await allLocal();
+  if(!cloud.status().authorized){
+   await renderHistory();
+   $('historySyncStatus').textContent='Historial local: '+local.length+' movimientos. Abre el enlace privado autorizado para consultar otros celulares.';
+   return;
+  }
+  const remote=await cloud.all(true);
+  const pending=local.filter(x=>x?.id&&!remote.some(y=>y.id===x.id)).length;
+  $('historySyncStatus').dataset.cloudInfo='Base central: '+remote.length+' movimientos; este celular: '+local.length+' locales'+(pending?', pendientes por sincronizar: '+pending:'')+'.';
+  await renderHistory();
+  if(pending) $('recoveryStatus').textContent='Hay '+pending+' registros locales de este celular pendientes de subir a la nube. Usa Recuperar y sincronizar ahora.';
+ }catch(e){
+  await renderHistory();
+  $('historySyncStatus').textContent='No se pudo consultar la base central: '+e.message+'. Se conservaron los movimientos locales.';
+ }finally{b.disabled=false;}
+}
+$('historyReload').onclick=refreshSharedHistory;
+$('historyClearFilters').onclick=()=>{
+ $('search').value='';$('filter').value='Todos';$('from').value='';$('to').value='';
+ refreshSharedHistory();
+};
 function detail(r){$('detail').innerHTML=`<div class="card" style="margin-top:16px"><h3>Detalle ${esc(r.id)}</h3><p><b>Fecha:</b> ${esc(new Date(r.iso).toLocaleString('es-PE'))} · <b>Movimiento:</b> ${esc(r.tipo)} · <b>Placa:</b> ${esc(r.placa)}</p><p><b>Cliente:</b> ${esc(r.cliente)} · <b>Conductor:</b> ${esc(r.conductor)}</p><p><b>Configuración:</b> ${esc(r.configTransporte||'Unidad sola')} · <b>Carreta:</b> ${esc(r.carreta||'No aplica')} · <b>Cama baja:</b> ${esc(r.camaBaja||'No aplica')}</p><p><b>${r.maquinariaTransportada?'Maquinaria transportada':'Material'}:</b> ${esc(r.maquinariaTransportada||r.material)} · <b>Cantidad:</b> ${r.configTransporte==='Trabajo / servicio'?'No aplica':esc(r.cantidad)+' '+esc(r.unidad)} · <b>Guía:</b> ${esc(r.guia)}</p><p><b>Trabajo / motivo de salida:</b> ${esc(r.trabajo||'No especificado')}</p><p><b>Autorización:</b> ${esc(r.autorizacion)} · <b>Responsable:</b> ${esc(r.responsable)}</p><p><b>Observaciones:</b> ${esc(r.observaciones)}</p><div class="photo">${(r.fotos||[]).map(s=>`<a href="${s}" target="_blank"><img alt="Foto" src="${s}"></a>`).join('')}</div><div class="actions"><button type="button" id="editarDetalle">Editar registro</button></div></div>`; $('editarDetalle').onclick=()=>abrirEdicion(r);}
 let registroEnEdicion=null;
 const EDIT_PROPS={tipo:'editTipo',placa:'editPlaca',configTransporte:'editConfig',cliente:'editCliente',conductor:'editConductor',carreta:'editCarreta',camaBaja:'editCamaBaja',maquinariaTransportada:'editMaquinaria',material:'editMaterial',trabajo:'editTrabajo',cantidad:'editCantidad',unidad:'editUnidad',autorizacion:'editAutorizacion',responsable:'editResponsable',observaciones:'editObservaciones'};
@@ -386,7 +423,7 @@ async function recuperarHistorialAutomatico(){
      ? 'Recuperación verificada: '+local.length+' registros de este celular presentes en la base central. Los originales siguen en el teléfono.'
      : 'Recuperación incompleta: '+(local.length-unverified.length)+' registros locales verificados en la nube; '+unverified.length+' pendientes. Conserva la aplicación y usa Recuperar y sincronizar ahora.';
    if(!unverified.length)AppMotion.notify('Historial anterior recuperado y verificado en la nube.');
-   if(!$('history').classList.contains('hidden'))await renderHistory();
+   if(!$('history').classList.contains('hidden'))await refreshSharedHistory();
  }catch(error){
    recoveryDone=false;
    $('recoveryStatus').textContent='La recuperación no terminó: '+error.message+'. No se eliminaron registros. Reintenta cuando tengas conexión.';
