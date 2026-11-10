@@ -324,6 +324,7 @@ async function cloudPullCatalogs(){
 }
 async function cloudRefresh(){
  if(!cloud.connected())return;
+ if(!await cloud.member()){cloudStatusRender('Cuenta conectada, pendiente de autorización de DIBISER.');return;}
  await cloud.all(true);await cloudPullCatalogs();
  if(!$('history').classList.contains('hidden'))await renderHistory();
  if(!$('report').classList.contains('hidden'))await renderReport();
