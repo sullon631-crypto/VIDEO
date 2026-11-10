@@ -11,6 +11,26 @@ const configured=()=>/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(cfg.url||'')&&
 if(!configured()){cfg={url:"https://afkghhioiklvnucwhylz.supabase.co",key:"sb_publishable_cvdWumZ_RPMqhx0n2ahsAw_Ti7CwkHC"};localStorage.setItem(K,JSON.stringify(cfg));}
 
 const linkMode=()=>/^[0-9a-f]{64}$/.test(inviteToken);
+async function activatePrivateLink(raw){
+ const value=String(raw||'').trim();
+ let token=value;
+ if(value.includes('#acceso=')){
+  try{token=new URLSearchParams(value.split('#')[1]||'').get('acceso')||'';}
+  catch{token='';}
+ }
+ token=token.toLowerCase();
+ if(!/^[0-9a-f]{64}$/.test(token))throw Error('Pega el enlace privado completo de DIBISER, no la dirección pública.');
+ const old=inviteToken;
+ inviteToken=token;
+ try{
+  const valid=await privateRpc('check',{});
+  if(!valid)throw Error('El enlace privado no está autorizado o fue revocado.');
+  memberStatus=true;
+  cache=null;cacheTime=0;
+  localStorage.setItem(L,token);
+  return true;
+ }catch(error){inviteToken=old;memberStatus=false;throw error;}
+}
 const connected=()=>configured()&&(linkMode()||!!session?.access_token);
 const status=()=>({configured:configured(),connected:connected(),authorized:connected()&&memberStatus,linkMode:linkMode(),email:linkMode()?'Acceso por enlace privado':session?.user?.email||''});
 function setup(url,key){
@@ -95,5 +115,5 @@ async function importRows(rows,onProgress){
  for(const row of rows){await save(row,null,true);done++;if(onProgress)onProgress(done,rows.length);}
  return done;
 }
-window.DibiserCloud={setup,configured,connected,status,login,signup,member,logout,all,save,update,preview,catalogItems,saveCatalog,importRows};
+window.DibiserCloud={setup,configured,connected,status,activatePrivateLink,login,signup,member,logout,all,save,update,preview,catalogItems,saveCatalog,importRows};
 })();
