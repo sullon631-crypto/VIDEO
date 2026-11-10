@@ -18,3 +18,11 @@
 - El proyecto debe tener la inscripción pública deshabilitada. Habilita MFA si necesitas mayor control.
 - Los cambios en GitHub Pages **no crean automáticamente la base de datos** ni los usuarios. Hasta configurar el backend, el modo es local y no comparte registros.
 - No borres caché, almacenamiento del navegador ni desinstales la PWA antes de exportar respaldo y confirmar la migración en otro dispositivo.
+
+## Actualización de capacidades y edición (v36)
+
+- **Volquetes, tolvones y cisternas:** en Catálogos > Capacidades registra por placa el volumen REAL y la unidad (`m³`, `Litros` o `Galones`). La selección de **Viaje completo** rellena automáticamente la cantidad solo si existe una capacidad registrada; **Metraje manual** permite un valor diferente y **Solo contar 1 viaje** registra `1 Viaje`. Una carreta/tolvón usa su propia capacidad, no la del tractor.
+- Datos iniciales declarados por DIBISER: BTN-867 = 26 m³ y T9K-863 = 17 m³. Son datos indicados por la empresa, no certificación independiente de la carrocería. Completa los demás con fichas de carrocería/tanque y verifica límites de peso.
+- **Editar:** cada movimiento del historial tiene un botón Editar. Al guardar se conserva el ID, fecha original y número de guía; los demás campos se pueden corregir y opcionalmente reemplazar la fotografía. En la nube se registra la versión y auditoría de cambios, para evitar que dos ediciones simultáneas se sobrescriban.
+- Si ya ejecutaste el esquema anterior de Supabase, ejecuta [migration_edicion_v36.sql](./migration_edicion_v36.sql) para habilitar las correcciones remotas. Si aún no creaste la base, usa el `schema.sql` actualizado completo.
+- **Estado:** las funciones de nube requieren que el propietario configure Supabase, usuarios y el SQL. Hasta ese momento cada celular seguirá usando datos locales.
