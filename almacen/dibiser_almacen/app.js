@@ -53,7 +53,9 @@ async function all(){
   const previous=merged.get(row.id);
   if(!previous||pendingIds.has(row.id)||(Number(row.editVersion)||0)>(Number(previous.editVersion)||0))merged.set(row.id,row);
  }
- return [...merged.values()].sort((x,y)=>String(y.iso||'').localeCompare(String(x.iso||'')));
+ // Mantener lápidas de eliminación tanto locales como compartidas para que no reaparezcan.
+ const deletedIds=new Set([...shared,...local].filter(r=>!!r.deletedAt).map(r=>r.id));
+ return [...merged.values()].filter(r=>!deletedIds.has(r.id)&&!r.deletedAt).sort((x,y)=>String(y.iso||'').localeCompare(String(x.iso||'')));
 }
 async function put(r){
  delete r.guiaManual;
@@ -243,6 +245,42 @@ async function renderReport(){let date=$('reportDate').value,rr=(await all()).fi
 $('reportDate').onchange=()=>AppMotion.task($('report'),renderReport).catch(AppMotion.error);
 function download(name,blob){let a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 $('excel').onclick=async()=>{const button=$('excel'),date=$('reportDate').value;if(!date)return AppMotion.notify('Selecciona una fecha para exportar.');if(button.disabled)return;button.disabled=true;const label=button.textContent;button.textContent='Preparando Excel…';try{const rows=(await all()).filter(r=>dateKey(r.iso)===date);if(!window.DibiserExcel?.build)throw Error('Exportador Excel no disponible. Abre la aplicación con conexión y vuelve a intentar.');const file=window.DibiserExcel.build(rows,date);download('DIBISER_movimientos_'+date+'.xlsx',file);AppMotion.notify('Libro Excel descargado con movimientos y resumen.')}catch(err){AppMotion.notify('No se pudo exportar Excel: '+err.message)}finally{button.disabled=false;button.textContent=label}};
+const selectedMovementIds=new Set();
+let visibleMovementIds=[];
+function updateSelectionControls(){
+ const visible=new Set(visibleMovementIds);
+ const current=visibleMovementIds.filter(id=>selectedMovementIds.has(id)).length;
+ const allBox=$('selectVisible');
+ allBox.checked=visibleMovementIds.length>0&&current===visibleMovementIds.length;
+ allBox.indeterminate=current>0&&current<visibleMovementIds.length;
+ allBox.disabled=visibleMovementIds.length===0;
+ $('selectAllVisible').disabled=visibleMovementIds.length===0;
+ $('clearSelected').disabled=selectedMovementIds.size===0;
+ $('deleteSelected').disabled=selectedMovementIds.size===0;
+ $('deleteSelected').textContent='Eliminar seleccionados ('+selectedMovementIds.size+')';
+}
+async function eliminarMovimientos(ids){
+ if(!ids.length)return;
+ const current=await all(),byId=new Map(current.map(x=>[x.id,x]));
+ const records=[...new Set(ids)].map(id=>byId.get(id)).filter(Boolean);
+ if(!records.length)return alert('Los movimientos seleccionados ya no están visibles. Actualiza el historial.');
+ const title=records.length===1?'el movimiento '+records[0].id:records.length+' movimientos seleccionados';
+ if(!confirm('¿Eliminar '+title+' del historial?\n\nSe ocultarán en este celular y en los demás dispositivos cuando se sincronicen. Esta acción no se puede deshacer desde el historial.'))return;
+ $('deleteSelected').disabled=true;
+ let done=0,failed=[];
+ for(const row of records){
+  try{
+   const moment=new Date().toISOString();
+   await putLocal({...row,deletedAt:moment,editedAt:moment,editVersion:(Number(row.editVersion)||0)+1});
+   selectedMovementIds.delete(row.id);done++;
+  }catch(err){failed.push(row.id+': '+err.message);}
+ }
+ $('detail').innerHTML='';
+ await renderHistory();
+ window.DibiserSync?.kick();
+ if(done)AppMotion.notify(done+' movimiento(s) eliminado(s) del historial. Sincronización automática pendiente.');
+ if(failed.length)alert('Se eliminaron '+done+' movimientos; '+failed.length+' no se pudieron eliminar:\n'+failed.join('\n'));
+}
 async function renderHistory(){
  const rrAll=await all();
  const q=$('search').value.trim().toLocaleLowerCase('es');
@@ -251,11 +289,36 @@ async function renderHistory(){
   if((f!=='Todos'&&r.tipo!==f)|| (from&&dateKey(r.iso)<from)||(to&&dateKey(r.iso)>to))return false;
   return [r.id,r.guia,r.placa,r.carreta,r.camaBaja,r.maquinariaTransportada,r.trabajo,r.cliente,r.conductor,r.material].some(v=>String(v??'').toLocaleLowerCase('es').includes(q));
  });
- $('historyRows').innerHTML=rr.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(new Date(r.iso).toLocaleString('es-PE'))}</td><td>${esc(r.tipo)}</td><td>${esc(r.placa)}</td><td>${esc(r.cliente)}</td><td>${esc(r.conductor)}</td><td>${esc(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:r.material))}</td><td>${r.configTransporte==='Trabajo / servicio'?'—':esc(r.cantidad)+' '+esc(r.unidad)}</td><td><button class="view" data-id="${esc(r.id)}">Ver</button> <button class="edit" data-id="${esc(r.id)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="9">No se encontraron movimientos con los filtros actuales.</td></tr>';
+ const validIds=new Set(rrAll.map(r=>r.id));
+ for(const id of selectedMovementIds)if(!validIds.has(id))selectedMovementIds.delete(id);
+ visibleMovementIds=rr.map(r=>r.id);
+ $('historyRows').innerHTML=rr.map(r=>`<tr><td><input type="checkbox" class="movement-select" data-id="${esc(r.id)}" aria-label="Seleccionar movimiento ${esc(r.id)}" ${selectedMovementIds.has(r.id)?'checked':''}></td><td>${esc(r.id)}</td><td>${esc(new Date(r.iso).toLocaleString('es-PE'))}</td><td>${esc(r.tipo)}</td><td>${esc(r.placa)}</td><td>${esc(r.cliente)}</td><td>${esc(r.conductor)}</td><td>${esc(r.maquinariaTransportada?'Maquinaria: '+r.maquinariaTransportada:(r.trabajo?'Servicio: '+r.trabajo:r.material))}</td><td>${r.configTransporte==='Trabajo / servicio'?'—':esc(r.cantidad)+' '+esc(r.unidad)}</td><td><button class="view" data-id="${esc(r.id)}">Ver</button> <button class="edit" data-id="${esc(r.id)}">Editar</button> <button class="delete-one" data-id="${esc(r.id)}" style="color:#a12531">Eliminar</button></td></tr>`).join('')||'<tr><td colspan="10">No se encontraron movimientos con los filtros actuales.</td></tr>';
  document.querySelectorAll('.view').forEach(b=>b.onclick=()=>detail(rr.find(r=>r.id===b.dataset.id)));
  document.querySelectorAll('.edit').forEach(b=>b.onclick=()=>abrirEdicion(rr.find(r=>r.id===b.dataset.id)));
- $('historySyncStatus').textContent='Historial de este celular: '+rr.length+' de '+rrAll.length+' movimientos.';
+ document.querySelectorAll('.delete-one').forEach(b=>b.onclick=()=>eliminarMovimientos([b.dataset.id]));
+ document.querySelectorAll('.movement-select').forEach(ch=>ch.onchange=()=>{
+  if(ch.checked)selectedMovementIds.add(ch.dataset.id);else selectedMovementIds.delete(ch.dataset.id);
+  updateSelectionControls();
+ });
+ updateSelectionControls();
+ $('historySyncStatus').textContent='Historial visible: '+rr.length+' de '+rrAll.length+' movimientos. Las eliminaciones se sincronizan entre dispositivos.';
 }
+$('selectVisible').onchange=checked=>{
+ for(const id of visibleMovementIds)if(checked.target.checked)selectedMovementIds.add(id);else selectedMovementIds.delete(id);
+ document.querySelectorAll('.movement-select').forEach(ch=>ch.checked=selectedMovementIds.has(ch.dataset.id));
+ updateSelectionControls();
+};
+$('selectAllVisible').onclick=()=>{
+ for(const id of visibleMovementIds)selectedMovementIds.add(id);
+ document.querySelectorAll('.movement-select').forEach(ch=>ch.checked=true);
+ updateSelectionControls();
+};
+$('clearSelected').onclick=()=>{
+ selectedMovementIds.clear();
+ document.querySelectorAll('.movement-select').forEach(ch=>ch.checked=false);
+ updateSelectionControls();
+};
+$('deleteSelected').onclick=()=>eliminarMovimientos([...selectedMovementIds]);
 function detail(r){$('detail').innerHTML=`<div class="card" style="margin-top:16px"><h3>Detalle ${esc(r.id)}</h3><p><b>Fecha:</b> ${esc(new Date(r.iso).toLocaleString('es-PE'))} · <b>Movimiento:</b> ${esc(r.tipo)} · <b>Placa:</b> ${esc(r.placa)}</p><p><b>Cliente:</b> ${esc(r.cliente)} · <b>Conductor:</b> ${esc(r.conductor)}</p><p><b>Configuración:</b> ${esc(r.configTransporte||'Unidad sola')} · <b>Carreta:</b> ${esc(r.carreta||'No aplica')} · <b>Cama baja:</b> ${esc(r.camaBaja||'No aplica')}</p><p><b>${r.maquinariaTransportada?'Maquinaria transportada':'Material'}:</b> ${esc(r.maquinariaTransportada||r.material)} · <b>Cantidad:</b> ${r.configTransporte==='Trabajo / servicio'?'No aplica':esc(r.cantidad)+' '+esc(r.unidad)} · <b>Guía:</b> ${esc(r.guia)}</p><p><b>Trabajo / motivo de salida:</b> ${esc(r.trabajo||'No especificado')}</p><p><b>Autorización:</b> ${esc(r.autorizacion)} · <b>Responsable:</b> ${esc(r.responsable)}</p><p><b>Observaciones:</b> ${esc(r.observaciones)}</p><div class="photo">${(r.fotos||[]).map(s=>`<a href="${s}" target="_blank"><img alt="Foto" src="${s}"></a>`).join('')}</div></div>`;}
 
 let editingRecord=null;
@@ -317,8 +380,8 @@ function abrirEdicion(row){
 }
 $('cancelarEdicion').onclick=()=>{cancelEditing();show('history')};
 $('historyReload').onclick=()=>{window.DibiserSync?.kick();AppMotion.task($('history'),renderHistory).catch(AppMotion.error);};
-$('historyClearFilters').onclick=()=>{$('search').value='';$('filter').value='Todos';$('from').value='';$('to').value='';AppMotion.task($('history'),renderHistory).catch(AppMotion.error)};
-for(let id of ['search','filter','from','to'])$(id).addEventListener('input',()=>AppMotion.task($('history'),renderHistory).catch(AppMotion.error));
+$('historyClearFilters').onclick=()=>{selectedMovementIds.clear();$('search').value='';$('filter').value='Todos';$('from').value='';$('to').value='';AppMotion.task($('history'),renderHistory).catch(AppMotion.error)};
+for(let id of ['search','filter','from','to'])$(id).addEventListener('input',()=>{selectedMovementIds.clear();AppMotion.task($('history'),renderHistory).catch(AppMotion.error)});
 function renderCatalog(){let k=$('catalogType').value,q=$('catalogSearch').value.toLocaleLowerCase('es');let a=catalogs[k].filter(v=>v.toLocaleLowerCase('es').includes(q));$('catalogList').innerHTML=`<p class="muted">${a.length} de ${catalogs[k].length} registros</p><table>${a.map(v=>`<tr><td>${esc(v)}</td></tr>`).join('')}</table>`}
 
 $('catalogType').onchange=renderCatalog;$('catalogSearch').oninput=renderCatalog;$('catalogAdd').onclick=()=>{let v=$('catalogNew').value;if(!v.trim())return;addCatalog($('catalogType').value,v);$('catalogNew').value='';renderCatalog()};
