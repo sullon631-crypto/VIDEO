@@ -53,6 +53,10 @@ async function save(row,manualGuide=null,importing=false){
  const result=await request('/rest/v1/rpc/dibiser_save_movement',{method:'POST',body:JSON.stringify({p_record:row,p_manual_guia:manualGuide,p_import:importing})});
  cache=null;return result;
 }
+async function update(row,expectedVersion=0){
+ const result=await request('/rest/v1/rpc/dibiser_update_movement',{method:'POST',body:JSON.stringify({p_id:row.id,p_record:row,p_expected_version:expectedVersion})});
+ cache=null;return result;
+}
 async function preview(){return await request('/rest/v1/rpc/dibiser_preview_guide',{method:'POST',body:'{}'});}
 async function catalogItems(){
  const a=await request('/rest/v1/dibiser_catalog_items?select=kind,value&limit=10000');return a;
@@ -67,5 +71,5 @@ async function importRows(rows,onProgress){
  for(const row of rows){await save(row,null,true);done++;if(onProgress)onProgress(done,rows.length);}
  return done;
 }
-window.DibiserCloud={setup,configured,connected,status,login,logout,all,save,preview,catalogItems,saveCatalog,importRows};
+window.DibiserCloud={setup,configured,connected,status,login,logout,all,save,update,preview,catalogItems,saveCatalog,importRows};
 })();
