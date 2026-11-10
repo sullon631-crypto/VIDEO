@@ -306,13 +306,22 @@ renderCatalog();
 /* Panel de conexión central: sin activación automática ni pérdida de los datos locales. */
 const cloud=window.DibiserCloud;
 function cloudStatusRender(message){
- const s=cloud.status(),label=s.connected?(s.authorized?'Conectado a base central: '+s.email:'Cuenta conectada, pendiente de autorización de DIBISER: '+s.email):s.configured?'Base central configurada. Inicia sesión con un usuario autorizado para compartir registros.':'MODO LOCAL: los movimientos aún NO se comparten entre celulares.';
+ const s=cloud.status();
+ const label=s.linkMode?(s.authorized?'Enlace privado validado: todos los celulares autorizados comparten el mismo historial.':'Verificando acceso privado de DIBISER...')
+  :'Acceso restringido. Solicita a DIBISER el enlace privado para ver y registrar movimientos.';
  $('cloudStatus').textContent=message||label;
- $('cloudConfigFields').classList.toggle('hidden',s.configured);
- $('cloudAuthFields').classList.toggle('hidden',s.connected);
+ $('cloudConfigFields').classList.add('hidden');
+ $('cloudAuthFields').classList.add('hidden');
+ $('cloudHelp').classList.toggle('hidden',s.linkMode&&s.authorized);
+ $('cloudHelp').textContent=s.linkMode?'Comparte únicamente el enlace privado de DIBISER. No publiques el enlace ni lo reenvíes a personas no autorizadas.':'Para entrar, abre el enlace privado que te envió DIBISER. No se necesita correo ni contraseña.';
  $('cloudImport').disabled=!s.authorized;
  $('cloudRefresh').disabled=!s.authorized;
  $('cloudLogout').disabled=!s.connected;
+ $('cloudLogout').textContent=s.linkMode?'Quitar acceso de este celular':'Cerrar sesión';
+ $('cloudImport').classList.toggle('hidden',!s.authorized);
+ $('cloudRefresh').classList.toggle('hidden',!s.authorized);
+ $('cloudLogout').classList.toggle('hidden',!s.authorized);
+ document.body.classList.toggle('dibiser-access-ok',!!s.authorized);
 }
 async function cloudPullCatalogs(){
  if(!cloud.connected())return;
@@ -324,7 +333,7 @@ async function cloudPullCatalogs(){
 }
 async function cloudRefresh(){
  if(!cloud.connected())return;
- if(!await cloud.member()){cloudStatusRender('Cuenta conectada, pendiente de autorización de DIBISER.');return;}
+ if(!await cloud.member()){cloudStatusRender('El enlace privado no es válido o fue revocado. Solicita uno nuevo a DIBISER.');return;}
  await cloud.all(true);await cloudPullCatalogs();
  if(!$('history').classList.contains('hidden'))await renderHistory();
  if(!$('report').classList.contains('hidden'))await renderReport();
@@ -378,6 +387,6 @@ $('cloudImport').onclick=async()=>{
  finally{b.disabled=false;cloudStatusRender()}
 };
 cloudStatusRender();
-if(cloud.connected())cloud.member().then(ok=>ok?cloudRefresh():cloudStatusRender('Cuenta conectada, pendiente de autorización de DIBISER.')).catch(e=>cloudStatusRender('Conexión central no disponible: '+e.message));
+if(cloud.connected())cloud.member().then(ok=>ok?cloudRefresh():cloudStatusRender('Enlace privado inválido o revocado.')).catch(e=>cloudStatusRender('No se pudo verificar el enlace privado: '+e.message));
 setInterval(()=>{if(cloud.connected()&&!document.hidden)cloudRefresh().catch(e=>cloudStatusRender('Sin conexión central: '+e.message));},20000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&cloud.connected())cloudRefresh().catch(e=>cloudStatusRender('Sin conexión central: '+e.message));});
