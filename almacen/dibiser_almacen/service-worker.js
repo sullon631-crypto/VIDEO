@@ -1,4 +1,4 @@
-const CACHE='dibiser-almacen-v20-trabajo-solo-opcion';
+const CACHE='dibiser-almacen-20261110-v21-servicios';
 const ASSETS=['./','./index.html','./app.js','./pwa.js','./professional.css','./interface.js','./motion.js','./motion.css','./report-pdf.js','./vendor/jspdf.umd.min.js','./vendor/jspdf.plugin.autotable.min.js','./fonts/inter-400.ttf','./fonts/inter-700.ttf','./fonts/inter-400.woff2','./fonts/inter-600.woff2','./fonts/inter-700.woff2','./manifest.webmanifest','./logo.jpeg','./catalogos.json','./icons/icon-180.png','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(async cache=>{await Promise.all(ASSETS.map(async asset=>{try{await cache.add(new Request(asset,{cache:'reload'}))}catch(err){console.warn('DIBISER: recurso no precargado',asset)}}));}).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(names=>Promise.all(names.filter(n=>n.startsWith('dibiser-almacen-')&&n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim()))});
