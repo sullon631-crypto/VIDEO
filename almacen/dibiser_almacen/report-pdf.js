@@ -198,7 +198,7 @@ async function buildReportPDF(records, date) {
       ['Configuración de transporte',r.configTransporte||'Unidad sola'],
       ...(r.carreta?[['Carreta / tolvón',r.carreta]]:[]),
       ...(r.camaBaja?[['Cama baja',r.camaBaja]]:[]),
-      ...(r.trabajo?[['Trabajo / motivo de salida',r.trabajo]]:
+      ...(r.trabajo?[[r.tipo==='Entrada'?'Trabajo / motivo de entrada':'Trabajo / motivo de salida',r.trabajo]]:
         [[r.maquinariaTransportada?'Maquinaria transportada':'Material registrado',
           r.maquinariaTransportada||r.material||'No registrado']]),
       ...(!service?[['Cantidad registrada',number(r.cantidad)+' '+text(r.unidad)]]:[]),
