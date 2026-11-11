@@ -105,7 +105,9 @@ async function refresh(){
   }
   let latest;
   try{latest=await cloud.all(true);}catch(err){latest=[...remoteById.values()];lastError=err.message;}
-  try{await cacheShared(latest);}catch(err){lastError='La copia de consultas en este dispositivo no pudo completarse: '+err.message;}
+  try{await cacheShared(latest);
+   window.DibiserCatalogs?.ingestHistory?.(latest);
+  }catch(err){lastError='La copia de consultas en este dispositivo no pudo completarse: '+err.message;}
   const remains=(await storeRows('pending_sync')).length;
   const allRows=await all();
   setStatus('Historial central: '+latest.length+' movimientos · visibles aquí: '+allRows.length+' · pendientes: '+remains+
