@@ -69,7 +69,7 @@ async function buildReportPDF(records, date) {
         if(empty&&amount>0)m.review+=amount;
         else m.total+=amount;
       }
-      if(!service){
+      if(!service||r.cliente){
         const client=upper(r.cliente||'SIN CLIENTE'),ck=softFold(client);
         let c=clients.get(ck);
         if(!c){c={name:client,count:0,entries:0,exits:0};clients.set(ck,c)}
@@ -192,7 +192,7 @@ async function buildReportPDF(records, date) {
     const data=[
       ['Código',r.id],
       ['Hora del movimiento',time],
-      ...(!service?[['Cliente / destino',r.cliente]]:[]),
+      ...(!service||r.cliente?[[service&&r.tipo==='Entrada'?'Proveedor / Empresa':'Cliente / destino',r.cliente]]:[]),
       ['Conductor / operador',r.conductor],
       ['Placa / serie',r.placa],
       ['Configuración de transporte',r.configTransporte||'Unidad sola'],
