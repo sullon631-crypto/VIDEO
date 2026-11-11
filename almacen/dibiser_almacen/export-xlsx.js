@@ -55,7 +55,7 @@
     ['Entrada / Salida',r=>r.tipo],['Placa / Serie',r=>r.placa],
     ['Configuración de transporte',r=>r.configTransporte||'Unidad sola'],['Carreta / Tolvón',r=>r.carreta],
     ['Cama baja',r=>r.camaBaja],['Maquinaria transportada',r=>r.maquinariaTransportada],
-    ['Trabajo / motivo de salida',r=>r.trabajo],['Cliente / Empresa / Destino',r=>r.cliente],
+    ['Trabajo / motivo del movimiento',r=>r.trabajo],['Cliente / Empresa / Destino',r=>r.cliente],
     ['Conductor / Operador',r=>r.conductor],['Material',r=>r.material],
     ['Cantidad',r=>r.configTransporte==='Trabajo / servicio'?'':Number(r.cantidad)||0],['Unidad de medida',r=>r.configTransporte==='Trabajo / servicio'?'':r.unidad],
     ['Número de guía',r=>r.guia],['Autorización',r=>r.autorizacion],
