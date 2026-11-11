@@ -59,6 +59,7 @@ async function refresh(){
   if(!verified){wasAuthorized=false;updateAccessLayout(false);setStatus('El enlace no está autorizado. Los '+local.length+' movimientos locales se mantienen intactos.');el('sharedAccess').classList.remove('hidden');return;}
   updateAccessLayout(true);
   el('sharedAccess').classList.add('hidden');
+  window.DibiserCatalogs?.sync?.().catch(err=>console.warn('Catálogo sin sincronizar:',err.message));
   const rows=await cloud.all(true),remoteById=new Map(rows.map(x=>[x.id,x]));
   const pending=await storeRows('pending_sync'),pendingById=new Map(pending.map(x=>[x.id,x]));
   setStatus('Conectado. Revisando '+local.length+' registros de este dispositivo y '+rows.length+' centrales...');
